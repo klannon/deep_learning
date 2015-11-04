@@ -1,19 +1,59 @@
 from __future__ import print_function
-import re
 import numpy as np
 from math import floor
+import csv
 
-def split(string, sep):
-    temp = re.split("[{0}]+".format(sep), string) # splits the string around sep, i.e. isolates instances of sep
-    temp.pop() # Remove the empty string at the end
-    return temp
+# Used the input method from previous physics.py
+def readFile(path, benchmark, derived_feat=True):
 
-def readFile(path, sep):
-    data = np.array([split(line, sep) for line in file(path)], dtype=np.float32) # reads the data into a numpy array efficiently and converts the strings to 32-bit floats
-    return data, data.shape[0], data.shape[1] # returns array, rows, columns
+    if derived_feat == 'False':
+        derived_feat = False
+    elif derived_feat == 'True':
+        derived_feat = True
 
-def getData(pathData, trainPercent, validPercent):
-    trainD, trainROWS, trainCOLS = readFile(pathData, ',')
+    if benchmark == 'HIGGS':
+        nrows = 11000000
+    elif benchmark == 'SUSY':
+        nrows = 5000000
+    else:
+        raise Exception('Not a valid file, needs to be HIGGS or SUSY')
+
+    # Define the feature lists and relevant columns
+    if benchmark == 'HIGGS':
+        if derived_feat == 'only':
+            xcolmin = 22
+            xcolmax = 29
+        elif not derived_feat:
+            xcolmin = 1
+            xcolmax = 22
+        else:
+            xcolmin = 1
+            xcolmax = 29
+    elif benchmark == 'SUSY':
+        if derived_feat == 'only':
+            xcolmin = 9
+            xcolmax = 19
+        if not derived_feat:
+            xcolmin = 1
+            xcolmax = 9
+        else:
+            xcolmin = 1
+            xcolmax = 19
+
+    data = np.empty([nrows, xcolmax-xcolmin+1], dtype='float32')
+
+    reader = csv.reader(open(path))
+    nread = 0
+    for row in reader:
+        temp = row[xcolmin:xcolmax]
+        temp.insert(0, row[0])
+        data[nread] = temp
+        nread += 1
+
+    return data, data.shape[0], data.shape[1]
+
+def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True):
+    trainD, trainROWS, trainCOLS = readFile(pathData, benchmark, derived_feat)
 
     # Print some examples
     print("train rows {0}; cols {1}".format(trainROWS, trainCOLS))

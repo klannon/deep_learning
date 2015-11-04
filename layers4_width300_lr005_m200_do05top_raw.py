@@ -13,8 +13,8 @@ import pylearn2.models.mlp as mlp
 import pylearn2.train
 
 ###########
-## CHANGES
-##  Changed where the datasets are defined because physics.PHYSICS was changed
+# CHANGES
+#  Changed where the datasets are defined because physics.PHYSICS was changed
 ###########
 
 
@@ -26,7 +26,7 @@ def init_train():
     # Dataset
     path = os.environ['PYLEARN2_DATA_PATH']+os.sep+'SUSY.csv'
     nvis = 8
-    dataset_train, dataset_valid, dataset_test = pylearn2.datasets.physics.PHYSICS(path, 0.6, 0.2, 0.2)
+    dataset_train, dataset_valid, dataset_test = pylearn2.datasets.physics.PHYSICS(path, 0.6, 0.2)
     #dataset_train_monitor = pylearn2.datasets.physics.PHYSICS(which_set='train', benchmark=benchmark, derived_feat=derived_feat, start=0,stop=100000)
     
     # Parameters

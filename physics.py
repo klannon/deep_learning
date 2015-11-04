@@ -3,11 +3,11 @@
 # May 2014
 
 ###########
-## CHANGES
-##  Changed PHYSICS so that it has a managing function which takes a data file
-##  and returns the training, validation, and testing sets at once. There also
-##  was no need for most of the variables used in the PHYSICS class so they were
-##  removed.
+# CHANGES
+#  Changed PHYSICS so that it has a managing function which takes a data file
+#  and returns the training, validation, and testing sets at once. There also
+#  was no need for most of the variables used in the PHYSICS class so they were
+#  removed or merged into csvData
 ###########
 
 from pylearn2.datasets import dense_design_matrix
@@ -19,11 +19,9 @@ import pickle as pkl
 import csvData
 from os import sep
 
-def PHYSICS(dataPath,
-            trainPerc,
-            validPerc):
+def PHYSICS(dataPath, trainPerc, validPerc, derived_feat=True):
     benchmark = dataPath.split(sep)[-1].split('.')[0] # Returns the name of the file without its extension
-    train, valid, test = csvData.getData(dataPath, trainPerc, validPerc)
+    train, valid, test = csvData.getData(dataPath, trainPerc, validPerc, benchmark, derived_feat)
     return (_PHYSICS(train, 'train', benchmark),
             _PHYSICS(valid, 'valid', benchmark),
             _PHYSICS(test, 'test', benchmark))
@@ -41,7 +39,7 @@ class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
         print 'Data loaded: benchmark {} ({})'.format(benchmark,which_set)
 
         # Initialize the superclass. DenseDesignMatrix
-        super(PHYSICS,self).__init__(X=data['data'], y=data['labels'])
+        super(_PHYSICS,self).__init__(X=data['data'], y=data['labels'])
         
     def standardize(self, X):
         """
@@ -61,7 +59,3 @@ class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
                 vec = vec / np.mean(vec)
             X[:,j] = vec
         return X
-
-
-
-
