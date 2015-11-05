@@ -11,6 +11,7 @@ import pylearn2.costs.mlp.dropout
 #import pylearn2.space
 import pylearn2.models.mlp as mlp
 import pylearn2.train
+from math import floor
 
 ###########
 # CHANGES
@@ -20,6 +21,8 @@ import pylearn2.train
 #
 #  Changed imports so the physics.py within the current folder is used instead
 #  of the one in our /afs/.../pylearn2/pylearn2/datasets/.
+#
+#  Made the dataset section more user-friendly/readable
 ###########
 
 
@@ -30,9 +33,15 @@ def init_train():
 
     # Dataset
     path = os.environ['PYLEARN2_DATA_PATH']+os.sep+'SUSY.csv'
+    train_percent = 0.6
+    valid_percent = 0.2
+    test_percent = 0.2
+    monitor_percent = 0.02*train_percent
     derived_feat, nvis = False, 8
-    dataset_train, dataset_valid, dataset_test = physics.PHYSICS(path, 0.6, 0.2, derived_feat)
-    dataset_train_monitor = physics._PHYSICS({'data': dataset_train.X[:100000, :], 'labels': dataset_train.y[:100000].reshape(100000, 1)}, 'train', dataset_train.args['benchmark'])
+    dataset_train, dataset_valid, dataset_test = physics.PHYSICS(path, train_percent, valid_percent, derived_feat)
+    cutoff = floor(monitor_percent*len(dataset_train.X))
+    data_dict = {'data': dataset_train.X[:cutoff, :], 'labels': dataset_train.y[:cutoff].reshape(cutoff, 1)}
+    dataset_train_monitor = physics._PHYSICS(data_dict, 'train', dataset_train.args['benchmark'])
     
     # Parameters
     momentum_saturate = 200
