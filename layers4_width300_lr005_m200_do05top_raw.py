@@ -4,7 +4,7 @@ import sys
 import os
 import theano
 import pylearn2
-import pylearn2.datasets.physics
+import physics
 import pylearn2.training_algorithms.sgd
 import pylearn2.termination_criteria
 import pylearn2.costs.mlp.dropout 
@@ -17,6 +17,9 @@ import pylearn2.train
 #  Changed where the datasets are defined because physics.PHYSICS was changed.
 #
 #  Manually implemented a dataset_train_monitor set with the new code.
+#
+#  Changed imports so the physics.py within the current folder is used instead
+#  of the one in our /afs/.../pylearn2/pylearn2/datasets/.
 ###########
 
 
@@ -28,8 +31,8 @@ def init_train():
     # Dataset
     path = os.environ['PYLEARN2_DATA_PATH']+os.sep+'SUSY.csv'
     derived_feat, nvis = False, 8
-    dataset_train, dataset_valid, dataset_test = pylearn2.datasets.physics.PHYSICS(path, 0.6, 0.2, derived_feat)
-    dataset_train_monitor = pylearn2.datasets.physics._PHYSICS({'data': dataset_train.X[:100000, :], 'labels': dataset_train.y[:100000].reshape(100000, 1)}, 'train', dataset_train.args['benchmark'])
+    dataset_train, dataset_valid, dataset_test = physics.PHYSICS(path, 0.6, 0.2, derived_feat)
+    dataset_train_monitor = physics._PHYSICS({'data': dataset_train.X[:100000, :], 'labels': dataset_train.y[:100000].reshape(100000, 1)}, 'train', dataset_train.args['benchmark'])
     
     # Parameters
     momentum_saturate = 200
