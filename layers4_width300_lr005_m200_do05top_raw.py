@@ -14,7 +14,9 @@ import pylearn2.train
 
 ###########
 # CHANGES
-#  Changed where the datasets are defined because physics.PHYSICS was changed
+#  Changed where the datasets are defined because physics.PHYSICS was changed.
+#
+#  Manually implemented a dataset_train_monitor set with the new code.
 ###########
 
 
@@ -25,9 +27,9 @@ def init_train():
 
     # Dataset
     path = os.environ['PYLEARN2_DATA_PATH']+os.sep+'SUSY.csv'
-    nvis = 8
-    dataset_train, dataset_valid, dataset_test = pylearn2.datasets.physics.PHYSICS(path, 0.6, 0.2)
-    #dataset_train_monitor = pylearn2.datasets.physics.PHYSICS(which_set='train', benchmark=benchmark, derived_feat=derived_feat, start=0,stop=100000)
+    derived_feat, nvis = False, 8
+    dataset_train, dataset_valid, dataset_test = pylearn2.datasets.physics.PHYSICS(path, 0.6, 0.2, derived_feat)
+    dataset_train_monitor = pylearn2.datasets.physics._PHYSICS({'data': dataset_train.X[:100000, :], 'labels': dataset_train.y[:100000].reshape(100000, 1)}, 'train', dataset_train.args['benchmark'])
     
     # Parameters
     momentum_saturate = 200

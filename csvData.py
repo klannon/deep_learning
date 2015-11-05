@@ -57,8 +57,8 @@ def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True):
 
     # Print some examples
     print("train rows {0}; cols {1}".format(trainROWS, trainCOLS))
-    for i in xrange(10):
-        print ('Label: {0} \t Train: {1}'.format(trainD[i, 0], trainD[i, 1:]))
+    #for i in xrange(10):
+    #    print ('Label: {0} \t Train: {1}'.format(trainD[i, 0], trainD[i, 1:]))
 
     trCutoff = floor(trainPercent*trainROWS)
     vaCutoff = trCutoff + floor(validPercent*trainROWS)

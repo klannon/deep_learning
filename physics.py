@@ -7,7 +7,9 @@
 #  Changed PHYSICS so that it has a managing function which takes a data file
 #  and returns the training, validation, and testing sets at once. There also
 #  was no need for most of the variables used in the PHYSICS class so they were
-#  removed or merged into csvData
+#  removed or merged into csvData.
+#
+#  Fixed the shape of the labels array
 ###########
 
 from pylearn2.datasets import dense_design_matrix
@@ -39,7 +41,7 @@ class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
         print 'Data loaded: benchmark {} ({})'.format(benchmark,which_set)
 
         # Initialize the superclass. DenseDesignMatrix
-        super(_PHYSICS,self).__init__(X=data['data'], y=data['labels'])
+        super(_PHYSICS, self).__init__(X=data['data'], y=data['labels'].reshape(len(data['labels']), 1))
         
     def standardize(self, X):
         """
