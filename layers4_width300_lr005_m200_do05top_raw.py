@@ -35,10 +35,11 @@ def init_train():
     path = os.environ['PYLEARN2_DATA_PATH']+os.sep+'SUSY.csv'
     train_percent = 0.6
     valid_percent = 0.2
-    test_percent = 0.2
+    test_percent = 0.2 # Just for the sake of completeness
     monitor_percent = 0.02*train_percent
-    derived_feat, nvis = False, 8
+    derived_feat = False
     dataset_train, dataset_valid, dataset_test = physics.PHYSICS(path, train_percent, valid_percent, derived_feat)
+    nvis = dataset_train.X.shape[1]
     cutoff = floor(monitor_percent*len(dataset_train.X))
     data_dict = {'data': dataset_train.X[:cutoff, :], 'labels': dataset_train.y[:cutoff].reshape(cutoff, 1)}
     dataset_train_monitor = physics._PHYSICS(data_dict, 'train', dataset_train.args['benchmark'])
@@ -75,7 +76,7 @@ def init_train():
     algorithm = pylearn2.training_algorithms.sgd.SGD(
                     batch_size=100,   # If changed, change learning rate!
                     learning_rate=.05, # In dropout paper=10 for gradient averaged over batch. Depends on batchsize.
-#                    init_momentum=.9, 
+                    #init_momentum=.9,
                     monitoring_dataset = {'train':dataset_train_monitor,
                                           'valid':dataset_valid,
                                           'test':dataset_test

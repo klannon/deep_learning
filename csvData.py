@@ -1,22 +1,31 @@
 from __future__ import print_function
 import numpy as np
 from math import floor
-import csv
+import re
 
 # Used the input method from previous physics.py
-def readFile(path, benchmark, derived_feat=True):
+def readFile(path, benchmark, derived_feat=True, sep='[^-?\d+\.?\d*?e\d*]', nrows=None, xcolmin=1, xcolmax=None):
 
     if derived_feat == 'False':
         derived_feat = False
     elif derived_feat == 'True':
         derived_feat = True
 
-    if benchmark == 'HIGGS':
-        nrows = 11000000
-    elif benchmark == 'SUSY':
-        nrows = 5000000
-    else:
-        raise Exception('Not a valid file, needs to be HIGGS or SUSY')
+    if nrows is not int:
+        if benchmark == 'HIGGS':
+            nrows = 11000000
+        elif benchmark == 'SUSY':
+            nrows = 5000000
+        elif 'test' in benchmark:
+            nrows = 90000
+        elif 'train' in benchmark:
+            nrows = 1700000
+        else:
+            count = 0
+            with open(path) as f:
+                for line in f:
+                    count +=1
+            nrows = count
 
     # Define the feature lists and relevant columns
     if benchmark == 'HIGGS':
@@ -33,30 +42,44 @@ def readFile(path, benchmark, derived_feat=True):
         if derived_feat == 'only':
             xcolmin = 9
             xcolmax = 19
-        if not derived_feat:
+        elif not derived_feat:
             xcolmin = 1
             xcolmax = 9
         else:
             xcolmin = 1
             xcolmax = 19
 
-    data = np.empty([nrows, xcolmax-xcolmin+1], dtype='float32')
-
-    reader = csv.reader(open(path))
     nread = 0
-    for row in reader:
-        temp = row[xcolmin:xcolmax]
-        temp.insert(0, row[0])
+    reader = (re.split(sep, line) for line in open(path))
+
+    if not xcolmax:
+        firstLine = next(reader)
+        rrow = filter(None, firstLine)
+        xcolmax = len(rrow)
+        data = np.empty([nrows, xcolmax-xcolmin+1], dtype='float32')
+        temp = rrow[xcolmin:xcolmax]
+        temp.insert(0, rrow[0])
         data[nread] = temp
         nread += 1
+    else:
+        data = np.empty([nrows, xcolmax-xcolmin+1], dtype='float32')
+
+    for row in reader:
+        rrow = filter(None, row)
+        temp = rrow[xcolmin:xcolmax]
+        temp.insert(0, rrow[0])
+        data[nread] = temp
+        nread += 1
+        if nread > nrows:
+            break
 
     return data, data.shape[0], data.shape[1]
 
-def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True):
-    trainD, trainROWS, trainCOLS = readFile(pathData, benchmark, derived_feat)
+def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True, sep='[^-?\d+\.?\d*?e\d*]', nrows=None, xcolmin=1, xcolmax=None):
+    trainD, trainROWS, trainCOLS = readFile(pathData, benchmark, derived_feat, sep, nrows, xcolmin, xcolmax)
 
     # Print some examples
-    print("train rows {0}; cols {1}".format(trainROWS, trainCOLS))
+    #print("train rows {0}; cols {1}".format(trainROWS, trainCOLS))
     #for i in xrange(10):
     #    print ('Label: {0} \t Train: {1}'.format(trainD[i, 0], trainD[i, 1:]))
 
