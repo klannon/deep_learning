@@ -12,12 +12,18 @@ this project contains python code that attempts to go deeper than any physicist 
 Installing the stuff
 --------------------
 1. Get the stuff we didn't write
-* [Theano](http://deeplearning.net/software/theano/)
-* [Pylearn2](http://deeplearning.net/software/pylearn2/)
-2. Get the stuff we wrote
-* `git clone https://github.com/klannon/deep-learning.git`
+<ul>
+<li><a href="http://deeplearning.net/software/theano/">Theano</a></li>
+<li><a href="http://deeplearning.net/software/pylearn2/>Pylearn2</a>"</li>
+</ul>
+2. Get the stuff we *did* write
+<ul>
+<li><code>git clone https://github.com/klannon/deep-learning.git</code></li>
+</ul>
 3. Set the `PYTHONPATH` environment variable
-* 'cd deep-learning'
-* 'setenv PYTHONPATH $PWD'
+<ul>
+<li><code>cd deep-learning</code></li>
+<li><code>setenv PYTHONPATH $PWD</code></li>
+</ul>
 
 If you're planning on using this a lot, consider adding the PYTHONPATH environment variable to your .cshrc or .profile so you don't have to keep setting it
