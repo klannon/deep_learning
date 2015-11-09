@@ -4,7 +4,7 @@ from math import floor
 import re
 
 # Used the input method from previous physics.py
-def readFile(pathToData, nrows=None, xcolmin=1, xcolmax=None, sep='[^-?\d+\.?\d*?e\d*]'):
+def readFile(pathToData, benchmark='', nrows=None, xcolmin=1, xcolmax=None, sep='[^(?:\-?\d+\.?\d*e?\d*)]'):
     """
     pathToData : location of file to be loaded
         This is pretty self-explanatory: where is the file you want
@@ -32,11 +32,16 @@ def readFile(pathToData, nrows=None, xcolmin=1, xcolmax=None, sep='[^-?\d+\.?\d*
         flexibility for possible delimiters
     """
     if nrows is not int:
-        count = 0
-        with open(pathToData) as f:
-            for line in f:
-                count +=1
-        nrows = count
+        if 'test' in benchmark:
+            nrows = 90000
+        elif 'train' in benchmark:
+            nrows = 1700000
+        else:
+            count = 0
+            with open(pathToData) as f:
+                for line in f:
+                    count +=1
+            nrows = count
     print("Loading %s, which has %i rows" %(pathToData, nrows))
 
     nread = 0
@@ -47,16 +52,20 @@ def readFile(pathToData, nrows=None, xcolmin=1, xcolmax=None, sep='[^-?\d+\.?\d*
     xcolmax = len(rrow)
     data = np.empty([nrows, xcolmax-xcolmin+2], dtype='float32')
     temp = rrow[xcolmin:xcolmax]
-    temp.insert(0, rrow[0])
-    temp.insert(0, 1)
+    if rrow[0] == '1':
+        temp = [1, 0] + temp
+    elif rrow[0] == '2':
+        temp = [0, 1] + temp
     data[nread] = temp
     nread += 1
 
     for row in reader:
         rrow = filter(None, row) # makes sure there are no null values
         temp = rrow[xcolmin:xcolmax]
-        temp.insert(0, rrow[0])
-        temp.insert(0, 1)
+        if rrow[0] == '1':
+            temp = [1, 0] + temp
+        elif rrow[0] == '2':
+            temp = [0, 1] + temp
         data[nread] = temp
         nread += 1
         if (nread % 10000 == 0):
@@ -66,7 +75,7 @@ def readFile(pathToData, nrows=None, xcolmin=1, xcolmax=None, sep='[^-?\d+\.?\d*
 
     return data, data.shape[0], data.shape[1]
 
-def getData(pathToData, trainFraction=None, sep='[^-?\d+\.?\d*?e\d*]'):
+def getData(pathToData, benchmark, trainFraction=None, sep='[^-?\d+\.?\d*?e\d*]'):
     """
     loads data from a file
 
@@ -95,7 +104,7 @@ def getData(pathToData, trainFraction=None, sep='[^-?\d+\.?\d*?e\d*]'):
         delimiter will be a comma, the default value allows a lot more
         flexibility for possible delimiters
     """
-    data, dataROWS, dataCOLS = readFile(pathToData, nrows=None, xcolmin=2, xcolmax=None, sep='[^-?\d+\.?\d*?e\d*]')
+    data, dataROWS, dataCOLS = readFile(pathToData, benchmark='', nrows=None, xcolmin=2, xcolmax=None, sep='[^(?:\-?\d+\.?\d*e?\d*)]')
 
     if not trainFraction:
         testData = {'data': data[:, 2:], 'labels': data[:, 0:2]}
@@ -104,12 +113,13 @@ def getData(pathToData, trainFraction=None, sep='[^-?\d+\.?\d*?e\d*]'):
     trCutoff = floor(trainFraction*dataROWS) # last row that training
     # data appears on
 
-    # Should we shuffle a copy or the actual data?
+    np.random.shuffle(data)
     
-    trainData = {'data': data[:trCutoff, 2:], 'labels': data[:trCutoff, 0:2]}
-    valData = {'data': data[trCutoff:, 2:], 'labels': data[trCutoff:, 0:2]}
+    trainData = {'data': data[:trCutoff, 2:], 'labels': data[:trCutoff, 0:2], 'size': lambda: (trCutoff, data.shape[1])}
+    valData = {'data': data[trCutoff:, 2:], 'labels': data[trCutoff:, 0:2], 'size': lambda: (dataROWS-trCutoff, data.shape[1])}
 
+    print(trainData['labels'])
     return trainData, valData
 
 if __name__ == '__main__':
-    readFile('../OSUtorch/test_all_3v_ttbar_wjet.txt')
+    getData('../OSUtorch/test_all_3v_ttbar_wjet.txt', 'test')

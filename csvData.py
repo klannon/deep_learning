@@ -4,7 +4,7 @@ from math import floor
 import re
 
 # Used the input method from previous physics.py
-def readFile(path, benchmark, derived_feat=True, sep='[^-?\d+\.?\d*?e\d*]', nrows=None, xcolmin=1, xcolmax=None):
+def readFile(path, benchmark, derived_feat=True, sep='[^(?:\-?\d+\.?\d*e?\d*)]', nrows=None, xcolmin=1, xcolmax=None):
 
     if derived_feat == 'False':
         derived_feat = False
@@ -65,6 +65,7 @@ def readFile(path, benchmark, derived_feat=True, sep='[^-?\d+\.?\d*?e\d*]', nrow
         data = np.empty([nrows, xcolmax-xcolmin+1], dtype='float32')
 
     for row in reader:
+        print(row)
         rrow = filter(None, row)
         temp = rrow[xcolmin:xcolmax]
         temp.insert(0, rrow[0])
@@ -75,7 +76,7 @@ def readFile(path, benchmark, derived_feat=True, sep='[^-?\d+\.?\d*?e\d*]', nrow
 
     return data, data.shape[0], data.shape[1]
 
-def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True, sep='[^-?\d+\.?\d*?e\d*]', nrows=None, xcolmin=1, xcolmax=None):
+def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True, sep='[^(?:\-?\d+\.?\d*e?\d*)]', nrows=None, xcolmin=1, xcolmax=None):
     trainD, trainROWS, trainCOLS = readFile(pathData, benchmark, derived_feat, sep, nrows, xcolmin, xcolmax)
 
     # Print some examples
@@ -88,8 +89,6 @@ def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True, 
 
     # Test data will be the remainder
 
-    # Should we shuffle a copy or the actual data?
-
     np.random.shuffle(trainD)
 
     trainData = {'data': trainD[:trCutoff, 1:], 'labels': trainD[:trCutoff, 0], 'size': lambda: (trCutoff, trainD.shape[1])}
@@ -97,3 +96,7 @@ def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True, 
     testData = {'data': trainD[trCutoff+vaCutoff:, 1:], 'labels': trainD[trCutoff+vaCutoff:, 0], 'size': lambda: (trainROWS-vaCutoff, trainD.shape[1])}
 
     return trainData, valData, testData
+
+if __name__ == '__main__':
+    readFile('OSUtorch/test_all_3v_ttbar_wjet.txt', 'test')
+    #readFile('SUSY.csv', 'SUSY')
