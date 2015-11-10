@@ -96,9 +96,13 @@ def init_train():
                                                 layer_name='h3',
                                                 dim=100,
                                                 istdev=.05),
-                                            mlp.Sigmoid(
+                                            # mlp.Sigmoid(
+                                            #     layer_name='y',
+                                            #     dim=2,
+                                            #     istdev=.001)
+                                            mlp.Softmax(
                                                 layer_name='y',
-                                                dim=2,
+                                                n_classes=2,
                                                 istdev=.001)
                                            ],
                                     nvis=nvis
