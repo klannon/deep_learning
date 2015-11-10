@@ -42,8 +42,7 @@ def init_train():
                                                                   train_fraction,
                                                                   numLabels=numLabels)
     nvis = dataset_train.X.shape[1] # number of visible layers
-    print(nvis)
-    
+
     # Model
     # model = pylearn2.models.mlp.MLP(layers=[mlp.Linear(
     #                                             layer_name='h0',
@@ -133,5 +132,5 @@ def train(mytrain):
     mytrain.main_loop()
 
 if __name__ == "__main__":
-	mytrain = init_train()
-	train(mytrain)
+    mytrain = init_train()
+    train(mytrain)

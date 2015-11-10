@@ -15,5 +15,5 @@ testPath = 'OSUtorch/test_all_3v_ttbar_wjet.txt'
 benchmarkD = dataPath.split(sep)[-1].split('.')[0]  # Name of file w/o the extension, though it works with just
 benchmarkT = testPath.split(sep)[-1].split('.')[0]  # the word "train" or "test"
 
-trainData, valData = csvData.getData(dataPath, 0.8, 0.2, benchmarkD)[:2]
-testData = csvData.getData(testPath, 1, 0, benchmarkT)[0]
+trainData, valData = csvData.getData(dataPath, 0.8, 0.2, benchmark=benchmarkD)[:2]
+testData = csvData.getData(testPath, 1, 0, benchmark=benchmarkT)[0]
