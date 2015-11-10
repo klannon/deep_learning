@@ -24,14 +24,13 @@ import os
 def PHYSICS(dataPath,
             trainPerc,
             validPerc,
-            derived_feat=True,
-            sep='[^(?:\-?\d+\.?\d*e?\d*)]',
-            nrows=None,
-            xcolmin=1,
-            xcolmax=None,
-            numLabels=1):
+            *args,
+            **kwargs):
+
     benchmark = dataPath.split(os.sep)[-1].split('.')[0] # Returns the name of the file without its extension
-    train, valid, test = csvData.getData(dataPath, trainPerc, validPerc, benchmark, derived_feat, sep, nrows, xcolmin, xcolmax, numLabels)
+
+    train, valid, test = csvData.getData(dataPath, trainPerc, validPerc, benchmark=benchmark, **kwargs)
+
     return (_PHYSICS(train, 'train', benchmark),
             _PHYSICS(valid, 'valid', benchmark),
             _PHYSICS(test, 'test', benchmark))
@@ -39,8 +38,8 @@ def PHYSICS(dataPath,
 class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
     def __init__(self,
                  data,
-                 which_set,
-                 benchmark):
+                 which_set='?',
+                 benchmark=''):
 
         self.args = locals()
         
