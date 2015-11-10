@@ -14,22 +14,35 @@ import os
 import numpy as np
 import pickle as pkl
 import csv
-from os import sep
+import os
 
-def PHYSICS(pathToTrainValidData, pathToTestData, trainFraction):
-    train, valid  = csv.getData(pathToTrainValidData, trainFraction)
-    test = csv.getData(pathToTestData)
-    return (_PHYSICS(train, 'train'),
-            _PHYSICS(valid, 'valid'),
-            _PHYSICS(test, 'test'))
+def PHYSICS(pathToTrainValidData,
+            pathToTestData,
+            trainFraction,
+            nrows=None,
+            xcolmin=1,
+            xcolmax=None,
+            numLabels=1,
+            sep='[^(?:\-?\d+\.?\d*e?\d*)]'):
+    benchmark_1 = pathToTrainValidData.split(os.sep)[-1].split('.')[0] # Returns the name of the file without its extension
+    benchmark_2 = pathToTestData.split(os.sep)[-1].split('.')[0]
+    print benchmark_1, benchmark_2
+    train, valid = csv.getData(pathToTrainValidData, trainFraction, benchmark_1, nrows, xcolmin, xcolmax, numLabels, sep)
+    test = csv.getData(pathToTestData, 0, benchmark_2, nrows, xcolmin, xcolmax, numLabels, sep)
+    return (_PHYSICS(train, 'train', benchmark_1),
+            _PHYSICS(valid, 'valid', benchmark_1),
+            _PHYSICS(test, 'test', benchmark_2))
 
 class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
-    def __init__(self, data, which_set):
+    def __init__(self,
+                 data,
+                 which_set='?',
+                 benchmark=''):
         # Need to allocate two arrays X (inputs) and y (targets)
-        print("Data loaded: %s" % which_set)
+        print 'Data loaded: {} ({})'.format(benchmark, which_set)
 
         # Initialize the superclass. DenseDesignMatrix
-        super(_PHYSICS, self).__init__(X=data['data'], y=data['labels'].reshape(len(data['labels']), 1))
+        super(_PHYSICS, self).__init__(X=data['data'], y=data['labels'])
         
     def standardize(self, X):
         """
@@ -49,3 +62,6 @@ class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
                 vec = vec / np.mean(vec)
             X[:,j] = vec
         return X
+
+if __name__ == '__main__':
+    PHYSICS('../OSUtorch/train_all_3v_ttbar_wjet.txt', '../OSUtorch/test_all_3v_ttbar_wjet.txt', 0.8, numLabels=2)

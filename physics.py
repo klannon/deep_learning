@@ -19,11 +19,19 @@ import os
 import numpy as np
 import pickle as pkl
 import csvData
-from os import sep
+import os
 
-def PHYSICS(dataPath, trainPerc, validPerc, derived_feat=True):
-    benchmark = dataPath.split(sep)[-1].split('.')[0] # Returns the name of the file without its extension
-    train, valid, test = csvData.getData(dataPath, trainPerc, validPerc, benchmark, derived_feat)
+def PHYSICS(dataPath,
+            trainPerc,
+            validPerc,
+            derived_feat=True,
+            sep='[^(?:\-?\d+\.?\d*e?\d*)]',
+            nrows=None,
+            xcolmin=1,
+            xcolmax=None,
+            numLabels=1):
+    benchmark = dataPath.split(os.sep)[-1].split('.')[0] # Returns the name of the file without its extension
+    train, valid, test = csvData.getData(dataPath, trainPerc, validPerc, benchmark, derived_feat, sep, nrows, xcolmin, xcolmax, numLabels)
     return (_PHYSICS(train, 'train', benchmark),
             _PHYSICS(valid, 'valid', benchmark),
             _PHYSICS(test, 'test', benchmark))
@@ -38,10 +46,10 @@ class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
         
         # Need to allocate two arrays X (inputs) and y (targets)
 
-        print 'Data loaded: benchmark {} ({})'.format(benchmark,which_set)
+        print 'Data loaded: benchmark {} ({})'.format(benchmark, which_set)
 
         # Initialize the superclass. DenseDesignMatrix
-        super(_PHYSICS, self).__init__(X=data['data'], y=data['labels'].reshape(len(data['labels']), 1))
+        super(_PHYSICS, self).__init__(X=data['data'], y=data['labels'])
         
     def standardize(self, X):
         """

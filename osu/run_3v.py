@@ -35,9 +35,12 @@ def init_train():
     pathToTestData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'test_all_3v_ttbar_wjet.txt'
     
     train_fraction = 0.8 # 1700000 in train file for train and valid
+    numLabels = 2 # Number of output nodes...softmax interpretation here
     
     dataset_train, dataset_valid, dataset_test  = physics.PHYSICS(pathToTrainValidData,
-                                                                  pathToTestData, train_fraction)
+                                                                  pathToTestData,
+                                                                  train_fraction,
+                                                                  numLabels=numLabels)
     nvis = dataset_train.X.shape[1] # number of visible layers
     print(nvis)
     

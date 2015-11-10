@@ -4,7 +4,13 @@ from math import floor
 import re
 
 # Used the input method from previous physics.py
-def readFile(pathToData, benchmark='', nrows=None, xcolmin=1, xcolmax=None, sep='[^(?:\-?\d+\.?\d*e?\d*)]'):
+def readFile(pathToData,
+             benchmark='',
+             nrows=None,
+             xcolmin=1,
+             xcolmax=None,
+             numLabels=1,
+             sep='[^(?:\-?\d+\.?\d*e?\d*)]'):
     """
     pathToData : location of file to be loaded
         This is pretty self-explanatory: where is the file you want
@@ -31,6 +37,7 @@ def readFile(pathToData, benchmark='', nrows=None, xcolmin=1, xcolmax=None, sep=
         delimiter will be a comma, the default value allows a lot more
         flexibility for possible delimiters
     """
+
     if nrows is not int:
         if 'test' in benchmark:
             nrows = 90000
@@ -40,32 +47,46 @@ def readFile(pathToData, benchmark='', nrows=None, xcolmin=1, xcolmax=None, sep=
             count = 0
             with open(pathToData) as f:
                 for line in f:
-                    count +=1
+                    count += 1
             nrows = count
-    print("Loading %s, which has %i rows" %(pathToData, nrows))
 
+    print("Loading %s, which has %i rows" %(pathToData, nrows))
     nread = 0
+    labelRange = map(lambda x: str(x+1), range(numLabels))
     reader = (re.split(sep, line) for line in open(pathToData))
 
-    firstLine = next(reader)
-    rrow = filter(None, firstLine)
-    xcolmax = len(rrow)
-    data = np.empty([nrows, xcolmax-xcolmin+2], dtype='float32')
-    temp = rrow[xcolmin:xcolmax]
-    if rrow[0] == '1':
-        temp = [1, 0] + temp
-    elif rrow[0] == '2':
-        temp = [0, 1] + temp
-    data[nread] = temp
-    nread += 1
+    if not xcolmax:
+        firstLine = next(reader)
+        rrow = filter(None, firstLine)
+        xcolmax = len(rrow)
+        data = np.empty([nrows, xcolmax-xcolmin+numLabels], dtype='float32')
+        temp = rrow[xcolmin:xcolmax]
+        if numLabels == 1:
+            label = [rrow[0]]
+        else:
+            try:
+                ix = labelRange.index(rrow[0])
+            except ValueError:
+                raise Exception('Label in your data is not in the range of numLabels provided')
+            label = [1 if num == ix else 0 for num in xrange(numLabels)]
+        temp = label + temp
+        data[nread] = temp
+        nread += 1
+    else:
+        data = np.empty([nrows, xcolmax-xcolmin+numLabels], dtype='float32')
 
     for row in reader:
-        rrow = filter(None, row) # makes sure there are no null values
+        rrow = filter(None, row)
         temp = rrow[xcolmin:xcolmax]
-        if rrow[0] == '1':
-            temp = [1, 0] + temp
-        elif rrow[0] == '2':
-            temp = [0, 1] + temp
+        if numLabels == 1:
+            label = [rrow[0]]
+        else:
+            try:
+                ix = labelRange.index(rrow[0])
+            except ValueError:
+                raise Exception('Label in your data is not in the range of numLabels provided')
+            label = [1 if num == ix else 0 for num in xrange(numLabels)]
+        temp = label + temp
         data[nread] = temp
         nread += 1
         if (nread % 10000 == 0):
@@ -75,7 +96,15 @@ def readFile(pathToData, benchmark='', nrows=None, xcolmin=1, xcolmax=None, sep=
 
     return data, data.shape[0], data.shape[1]
 
-def getData(pathToData, benchmark, trainFraction=None, sep='[^-?\d+\.?\d*?e\d*]'):
+# Changing default value of trainFraction because skipping the randomization of data should not be encouraged
+def getData(pathToData,
+            trainFraction=1,
+            benchmark='',
+            nrows=None,
+            xcolmin=1,
+            xcolmax=None,
+            numLabels=1,
+            sep='[^(?:\-?\d+\.?\d*e?\d*)]'):
     """
     loads data from a file
 
@@ -104,22 +133,32 @@ def getData(pathToData, benchmark, trainFraction=None, sep='[^-?\d+\.?\d*?e\d*]'
         delimiter will be a comma, the default value allows a lot more
         flexibility for possible delimiters
     """
-    data, dataROWS, dataCOLS = readFile(pathToData, benchmark='', nrows=None, xcolmin=2, xcolmax=None, sep='[^(?:\-?\d+\.?\d*e?\d*)]')
+    data, dataROWS, dataCOLS = readFile(pathToData, benchmark, nrows, xcolmin, xcolmax, numLabels, sep)
 
+    # Don't do this if you want data for training, it needs to be shuffled....only for testing
     if not trainFraction:
-        testData = {'data': data[:, 2:], 'labels': data[:, 0:2]}
+        testData = {'data': data[:, numLabels:], 'size': lambda: (dataROWS, data.shape[1])}
+        if numLabels == 1:
+            testData['labels'] = data[:, 0:numLabels].reshape(dataROWS, 1)
+        else:
+            testData['labels'] = data[:, 0:numLabels]
         return testData
 
     trCutoff = floor(trainFraction*dataROWS) # last row that training
     # data appears on
 
+    # Test data will be the remainder
+
     np.random.shuffle(data)
-    
-    trainData = {'data': data[:trCutoff, 2:], 'labels': data[:trCutoff, 0:2], 'size': lambda: (trCutoff, data.shape[1])}
-    valData = {'data': data[trCutoff:, 2:], 'labels': data[trCutoff:, 0:2], 'size': lambda: (dataROWS-trCutoff, data.shape[1])}
 
-    print(trainData['labels'])
+    trainData = {'data': data[:trCutoff, numLabels:], 'size': lambda: (trCutoff, data.shape[1])}
+    valData = {'data': data[trCutoff:, numLabels:], 'size': lambda: (dataROWS-trCutoff, data.shape[1])}
+
+    if numLabels == 1:
+        trainData['labels'] = data[:trCutoff, 0:numLabels].reshape(trCutoff, 1)
+        valData['labels'] = data[trCutoff:, 0:numLabels].reshape(dataROWS-trCutoff, 1)
+    else:
+        trainData['labels'] = data[:trCutoff, 0:numLabels]
+        valData['labels'] = data[trCutoff:, 0:numLabels]
+
     return trainData, valData
-
-if __name__ == '__main__':
-    getData('../OSUtorch/test_all_3v_ttbar_wjet.txt', 'test')

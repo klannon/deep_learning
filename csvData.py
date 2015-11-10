@@ -4,7 +4,14 @@ from math import floor
 import re
 
 # Used the input method from previous physics.py
-def readFile(path, benchmark, derived_feat=True, sep='[^(?:\-?\d+\.?\d*e?\d*)]', nrows=None, xcolmin=1, xcolmax=None):
+def readFile(path,
+             benchmark='',
+             derived_feat=True,
+             sep='[^(?:\-?\d+\.?\d*e?\d*)]',
+             nrows=None,
+             xcolmin=1,
+             xcolmax=None,
+             numLabels=1):
 
     if derived_feat == 'False':
         derived_feat = False
@@ -24,7 +31,7 @@ def readFile(path, benchmark, derived_feat=True, sep='[^(?:\-?\d+\.?\d*e?\d*)]',
             count = 0
             with open(path) as f:
                 for line in f:
-                    count +=1
+                    count += 1
             nrows = count
 
     # Define the feature lists and relevant columns
@@ -50,25 +57,41 @@ def readFile(path, benchmark, derived_feat=True, sep='[^(?:\-?\d+\.?\d*e?\d*)]',
             xcolmax = 19
 
     nread = 0
+    labelRange = map(lambda x: str(x+1), range(numLabels))
     reader = (re.split(sep, line) for line in open(path))
 
     if not xcolmax:
         firstLine = next(reader)
         rrow = filter(None, firstLine)
         xcolmax = len(rrow)
-        data = np.empty([nrows, xcolmax-xcolmin+1], dtype='float32')
+        data = np.empty([nrows, xcolmax-xcolmin+numLabels], dtype='float32')
         temp = rrow[xcolmin:xcolmax]
-        temp.insert(0, rrow[0])
+        if numLabels == 1:
+            label = [rrow[0]]
+        else:
+            try:
+                ix = labelRange.index(rrow[0])
+            except ValueError:
+                raise Exception('Label in your data is not in the range of numLabels provided')
+            label = [1 if num == ix else 0 for num in xrange(numLabels)]
+        temp = label + temp
         data[nread] = temp
         nread += 1
     else:
-        data = np.empty([nrows, xcolmax-xcolmin+1], dtype='float32')
+        data = np.empty([nrows, xcolmax-xcolmin+numLabels], dtype='float32')
 
     for row in reader:
-        print(row)
         rrow = filter(None, row)
         temp = rrow[xcolmin:xcolmax]
-        temp.insert(0, rrow[0])
+        if numLabels == 1:
+            label = [rrow[0]]
+        else:
+            try:
+                ix = labelRange.index(rrow[0])
+            except ValueError:
+                raise Exception('Label in your data is not in the range of numLabels provided')
+            label = [1 if num == ix else 0 for num in xrange(numLabels)]
+        temp = label + temp
         data[nread] = temp
         nread += 1
         if nread > nrows:
@@ -76,13 +99,17 @@ def readFile(path, benchmark, derived_feat=True, sep='[^(?:\-?\d+\.?\d*e?\d*)]',
 
     return data, data.shape[0], data.shape[1]
 
-def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True, sep='[^(?:\-?\d+\.?\d*e?\d*)]', nrows=None, xcolmin=1, xcolmax=None):
-    trainD, trainROWS, trainCOLS = readFile(pathData, benchmark, derived_feat, sep, nrows, xcolmin, xcolmax)
-
-    # Print some examples
-    #print("train rows {0}; cols {1}".format(trainROWS, trainCOLS))
-    #for i in xrange(10):
-    #    print ('Label: {0} \t Train: {1}'.format(trainD[i, 0], trainD[i, 1:]))
+def getData(pathData,
+            trainPercent,
+            validPercent,
+            benchmark='',
+            derived_feat=True,
+            sep='[^(?:\-?\d+\.?\d*e?\d*)]',
+            nrows=None,
+            xcolmin=1,
+            xcolmax=None,
+            numLabels=1):
+    trainD, trainROWS, trainCOLS = readFile(pathData, benchmark, derived_feat, sep, nrows, xcolmin, xcolmax, numLabels)
 
     trCutoff = floor(trainPercent*trainROWS)
     vaCutoff = trCutoff + floor(validPercent*trainROWS)
@@ -91,12 +118,17 @@ def getData(pathData, trainPercent, validPercent, benchmark, derived_feat=True, 
 
     np.random.shuffle(trainD)
 
-    trainData = {'data': trainD[:trCutoff, 1:], 'labels': trainD[:trCutoff, 0], 'size': lambda: (trCutoff, trainD.shape[1])}
-    valData = {'data': trainD[trCutoff:vaCutoff, 1:], 'labels': trainD[trCutoff:vaCutoff, 0], 'size': lambda: (vaCutoff-trCutoff, trainD.shape[1])}
-    testData = {'data': trainD[trCutoff+vaCutoff:, 1:], 'labels': trainD[trCutoff+vaCutoff:, 0], 'size': lambda: (trainROWS-vaCutoff, trainD.shape[1])}
+    trainData = {'data': trainD[:trCutoff, numLabels:], 'size': lambda: (trCutoff, trainD.shape[1])}
+    valData = {'data': trainD[trCutoff:vaCutoff, numLabels:], 'size': lambda: (vaCutoff-trCutoff, trainD.shape[1])}
+    testData = {'data': trainD[trCutoff+vaCutoff:, numLabels:], 'size': lambda: (trainROWS-vaCutoff, trainD.shape[1])}
+
+    if numLabels == 1:
+        trainData['labels'] = trainD[:trCutoff, 0:numLabels].reshape(trCutoff, 1)
+        valData['labels'] = trainD[trCutoff:vaCutoff, 0:numLabels].reshape(vaCutoff-trCutoff, 1)
+        testData['labels'] = trainD[trCutoff+vaCutoff:, 0:numLabels].reshape(trainROWS-vaCutoff, 1)
+    else:
+        trainData['labels'] = trainD[:trCutoff, 0:numLabels]
+        valData['labels'] = trainD[trCutoff:vaCutoff, 0:numLabels]
+        testData['labels'] = trainD[trCutoff+vaCutoff:, 0:numLabels]
 
     return trainData, valData, testData
-
-if __name__ == '__main__':
-    readFile('OSUtorch/test_all_3v_ttbar_wjet.txt', 'test')
-    #readFile('SUSY.csv', 'SUSY')
