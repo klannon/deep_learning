@@ -37,6 +37,9 @@ class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
                  data,
                  which_set='?',
                  benchmark=''):
+
+        self.args = locals()
+
         # Need to allocate two arrays X (inputs) and y (targets)
         print 'Data loaded: {} ({})'.format(benchmark, which_set)
 

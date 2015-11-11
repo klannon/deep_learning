@@ -31,8 +31,11 @@ def init_train():
     save_path = idpath + '.pkl'
 
     # Dataset
-    pathToTrainValidData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'train_all_3v_ttbar_wjet.txt'
-    pathToTestData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'test_all_3v_ttbar_wjet.txt'
+    #pathToTrainValidData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'train_all_3v_ttbar_wjet.txt'
+    #pathToTestData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'test_all_3v_ttbar_wjet.txt'
+
+    pathToTrainValidData = '..\\OSUtorch\\train_all_3v_ttbar_wjet.txt'
+    pathToTestData = '..\\OSUtorch\\test_all_3v_ttbar_wjet.txt'
     
     train_fraction = 0.8 # 1700000 in train file for train and valid
     numLabels = 2 # Number of output nodes...softmax interpretation here
@@ -41,6 +44,13 @@ def init_train():
                                                                   pathToTestData,
                                                                   train_fraction,
                                                                   numLabels=numLabels)
+    # For monitoring updates without having to read in a file again.
+    monitor_percent = 0.02*train_fraction
+    cutoff = floor(monitor_percent*len(dataset_train.X))
+    data_dict = {'data': dataset_train.X[:cutoff, :], 'labels': dataset_train.y[:cutoff], 'size': lambda: (cutoff, dataset_train.X.shape[1])}
+    dataset_train_monitor = physics._PHYSICS(data_dict, 'monitor', dataset_train.args['benchmark'])
+
+
     nvis = dataset_train.X.shape[1] # number of visible layers
 
     # Model
@@ -112,6 +122,10 @@ def init_train():
     algorithm = pylearn2.training_algorithms.sgd.SGD(
                     batch_size=16,
                     learning_rate=.001,
+                    monitoring_dataset = {'train':dataset_train_monitor,
+                                          'valid':dataset_valid,
+                                          'test':dataset_test
+                                          }
                 )
     # Train
     train = pylearn2.train.Train(dataset=dataset_train,
