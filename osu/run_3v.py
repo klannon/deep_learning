@@ -31,11 +31,8 @@ def init_train():
     save_path = idpath + '.pkl'
 
     # Dataset
-    #pathToTrainValidData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'train_all_3v_ttbar_wjet.txt'
-    #pathToTestData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'test_all_3v_ttbar_wjet.txt'
-
-    pathToTrainValidData = '..\\OSUtorch\\train_all_3v_ttbar_wjet.txt'
-    pathToTestData = '..\\OSUtorch\\test_all_3v_ttbar_wjet.txt'
+    pathToTrainValidData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'train_all_3v_ttbar_wjet.txt'
+    pathToTestData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'test_all_3v_ttbar_wjet.txt'
     
     train_fraction = 0.8 # 1700000 in train file for train and valid
     numLabels = 2 # Number of output nodes...softmax interpretation here
