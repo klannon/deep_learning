@@ -23,7 +23,7 @@ class AccuracyMonitor(TrainExtension):
         print("Writing to {}".format(os.path.splitext(save_path)[0]+"_classification_accuracy.csv"))
         self.save_file = open(os.path.splitext(save_path)[0]+"_classification_accuracy.csv", 'w')
 
-        X = T.dmatrix('X')
+        X = T.fmatrix('X')
         self.y_hat = function([X], model.fprop(X))
         self.accuracy = lambda x_1, x_2: ((((x_1 - train.y) > -0.5)==((x_1 - train.y) < 0)).sum(),
                                           (((x_2 - test.y) > -0.5)==((x_2 - test.y) < 0)).sum())
