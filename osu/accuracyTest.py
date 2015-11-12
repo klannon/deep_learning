@@ -36,8 +36,8 @@ class AccuracyMonitor(TrainExtension):
     def on_monitor(self, model, dataset, algorithm):
         train_accuracy, test_accuracy = self.accuracy(self.y_hat(self.args['train'].X), self.y_hat(self.args['test'].X))
 
-        train_percent = train_accuracy*100/self.train_data_size
-        test_percent = test_accuracy*100/self.test_data_size
+        train_percent = train_accuracy/self.train_data_size
+        test_percent = test_accuracy/self.test_data_size
 
         self.save_file.write("{},{},{}\n".format(self.epoch, train_percent, test_percent))
         self.save_file.flush()
