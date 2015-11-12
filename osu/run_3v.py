@@ -11,18 +11,13 @@ import theano
 import pylearn2
 import physics # in order for this to not give an ImportError, need to
 # set PYTHONPATH (see README.md)
-""" Because I made major changes to the data structures used in
-the csv reader and in physics.py, I made a copy of each in this
-directory so other files in the root directory of the repo will continue
-to run.  Eventully, I would like to move the versions of physics.py and
-csv.py that I edited to the the root directory of the repo and use
-them across the project. """
 print(physics.__file__)
 import pylearn2.training_algorithms.sgd
 import pylearn2.models.mlp as mlp
 import pylearn2.train
 import pylearn2.space
 from math import floor
+from accuracyTest import AccuracyMonitor
 
 
 def init_train():
@@ -136,6 +131,7 @@ def init_train():
                                  model=model,
                                  algorithm=algorithm,
                                  save_path=save_path,
+                                 extensions=[AccuracyMonitor(model, dataset_train, dataset_valid, dataset_test, save_path)],
                                  save_freq=100)
     return train
 
