@@ -29,9 +29,10 @@ class AccuracyMonitor(TrainExtension):
         trainY = shared(train.y)
         validY = shared(valid.y)
         testY = shared(test.y)
-        self.y_diffs = function([X_1, X_2, X_3], [model.fprop(X_1)-trainY, model.fprop(X_2)-validY, model.fprop(X_3)-testY])
 
-        self.accuracy = lambda x1, x2, x3: (((diff > -0.5)==(diff < 0)).sum() for diff in self.y_diffs(x1, x2, x3))
+        self.accuracy = function([X_1, X_2, X_3], [T.sum(((model.fprop(X_1)-trainY) > -0.5)&((model.fprop(X_1)-trainY) < 0)),
+                                                   T.sum(((model.fprop(X_2)-validY) > -0.5)&((model.fprop(X_2)-validY) < 0)),
+                                                   T.sum(((model.fprop(X_3)-testY) > -0.5)&((model.fprop(X_3)-testY) < 0))])
 
         self.train_data_size = train.y.shape[0]
         self.test_data_size = test.y.shape[0]
