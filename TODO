@@ -1,0 +1,1 @@
+1. Edit the template folder so all major parameters in the network (number of layers, batch size, decaying LR, etc) can be set by command-line arguments/flags
