@@ -8,23 +8,26 @@ from __future__ import print_function
 import sys
 import os
 import theano
-import pylearn2
+import argparse
+from math import floor
 import physics # in order for this to not give an ImportError, need to
 # set PYTHONPATH (see README.md)
 print(physics.__file__)
+
+import pylearn2
 import pylearn2.training_algorithms.sgd
 import pylearn2.models.mlp as mlp
 import pylearn2.train
 import pylearn2.space
 import pylearn2.termination_criteria
-from math import floor
 
-def init_train():
+
+def init_train(learningRate, batchSize, numLayers):
     hostname = os.environ["HOST"] # So scripts can be run simultaneously on different machines
     idpath = os.getcwd()
     idpath += "/results/"
     idpath += hostname
-    idpath += ("_layers%s" % sys.argv[1])
+    idpath += ("_layers%s" % numLayers)
     print(idpath)
     save_path = idpath + '.pkl'
 
@@ -51,8 +54,7 @@ def init_train():
     # Model
     network_layers = []
     count = 1
-    numlayers = int(sys.argv[1])
-    while(count <= numlayers):
+    while(count <= numLayers):
         network_layers.append(mlp.RectifiedLinear(
             layer_name=('r%i' % count),
             dim=100,
@@ -86,7 +88,6 @@ def init_train():
                                  model=model,
                                  algorithm=algorithm,
                                  save_path=save_path,
-                                 # extensions=[AccuracyMonitor(model, dataset_train, dataset_valid, dataset_test, save_path)],
                                  save_freq=100)
     return train
 
@@ -101,5 +102,57 @@ def train(mytrain):
     mytrain.main_loop()
 
 if __name__ == "__main__":
-	mytrain = init_train()
-    train(mytrain)
+	parser = argparse.ArgumentParser()
+
+	###################################
+	## SET UP COMMAND LINE ARGUMENTS ##
+	###################################
+
+	parser.add_argument("-r", "--learningRate", help="learning rate")
+	parser.add_argument("-b", "--batchSize", help="size of each batch "
+	                    + "(subset of training set)")
+	parser.add_argument("-l", "--numLayers",
+	                    help="number of hidden layers in the network")
+	args = parser.parse_args()
+
+	########################
+	## VALIDATE ARGUMENTS ##
+	########################
+
+	# Catches both the TypeError that gets thrown if the argument/flag
+	# isn't supplied and the ValueError that gets thrown if an argument
+	# is supplied with a type besides that specified in the 'try' block
+
+	
+	## Default Values if no argument is supplied
+	learningRate = .001
+	batchSize = 256
+	numLayers = 4
+	
+	## args.learningRate
+	try:
+		learningRate = float(args.learningRate)
+		print("Learning Rate: %f" % learningRate)
+	except:
+		print("Learning Rate: %f (Default)" % learningRate)
+
+	## args.batchSize
+	try:
+		batchSize = int(args.batchSize)
+		print("Batch Size: %i" % batchSize)
+	except:
+		print("Batch Size: %i (Default)" % batchSize)
+		
+	## args.numLayers
+	try:
+		numLayers = int(args.numLayers)
+		print("Number of Layers: %i" % numLayers)
+	except:
+		print("Number of Layers: %i (Default)" % numLayers)
+
+	##########################################
+	## INITIALIZE TRAINING OBJECT AND TRAIN ##
+	##########################################
+	
+	mytrain = init_train(learningRate, batchSize, numLayers)
+	train(mytrain)
