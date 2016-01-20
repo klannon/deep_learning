@@ -7,11 +7,13 @@
 from __future__ import print_function
 import sys
 import os
+import os.path
 import theano
 import argparse
 from math import floor
 import physics # in order for this to not give an ImportError, need to
 # set PYTHONPATH (see README.md)
+from profiling.terminators import Timeout
 print(physics.__file__)
 
 import pylearn2
@@ -21,13 +23,12 @@ import pylearn2.train
 import pylearn2.space
 import pylearn2.termination_criteria
 
-
-def init_train(learningRate, batchSize, numLayers):
-    hostname = os.environ["HOST"] # So scripts can be run simultaneously on different machines
-    idpath = os.getcwd()
-    idpath += "/results/"
-    idpath += hostname
-    idpath += ("_layers%s" % numLayers)
+def init_train(learningRate, batchSize, numLayers, timeout=None, maxEpochs=None):               # EDITED
+    hostname = os.getenv("HOST", os.getpid()) # So scripts can be run simultaneously on different machines
+    results_dir = "{1}{0}results{0}".format(os.sep, os.getcwd())
+    if not os.path.isdir(results_dir):
+        os.mkdir(results_dir)
+    idpath = "{}{}_layers{}".format(results_dir, hostname, numLayers)
     print(idpath)
     save_path = idpath + '.pkl'
 
@@ -68,6 +69,14 @@ def init_train(learningRate, batchSize, numLayers):
     print(network_layers)
     model = pylearn2.models.mlp.MLP(layers=network_layers,
                                      nvis=nvis)
+
+    if timeout:
+        terminator = Timeout(timeout*60)
+    elif maxEpochs:
+        terminator = pylearn2.termination_criteria.EpochCounter(max_epochs=maxEpochs)
+    else:
+        terminator = None
+
     # Algorithm
     algorithm = pylearn2.training_algorithms.sgd.SGD(
         batch_size=32,
@@ -80,8 +89,7 @@ def init_train(learningRate, batchSize, numLayers):
         #     decay_factor=1.0000003, # Decreases by this factor every batch. (1/(1.000001^8000)^100 
         #     min_lr=.000001
         # ),
-        termination_criterion = pylearn2.termination_criteria.EpochCounter(
-                max_epochs = 3)
+        termination_criterion=terminator
     )
     # Train
     train = pylearn2.train.Train(dataset=dataset_train,
@@ -101,58 +109,61 @@ def train(mytrain):
     print("opened log file")
     mytrain.main_loop()
 
-if __name__ == "__main__":
-	parser = argparse.ArgumentParser()
+def run(timeout=None, maxEpochs=None):                                      # EDITED
+    parser = argparse.ArgumentParser()
 
-	###################################
-	## SET UP COMMAND LINE ARGUMENTS ##
-	###################################
+    ###################################
+    ## SET UP COMMAND LINE ARGUMENTS ##
+    ###################################
 
-	parser.add_argument("-r", "--learningRate", help="learning rate")
-	parser.add_argument("-b", "--batchSize", help="size of each batch "
-	                    + "(subset of training set)")
-	parser.add_argument("-l", "--numLayers",
-	                    help="number of hidden layers in the network")
-	args = parser.parse_args()
+    parser.add_argument("-r", "--learningRate", help="learning rate")
+    parser.add_argument("-b", "--batchSize", help="size of each batch "
+                        + "(subset of training set)")
+    parser.add_argument("-l", "--numLayers",
+                        help="number of hidden layers in the network")
+    args = parser.parse_args()
 
-	########################
-	## VALIDATE ARGUMENTS ##
-	########################
+    ########################
+    ## VALIDATE ARGUMENTS ##
+    ########################
 
-	# Catches both the TypeError that gets thrown if the argument/flag
-	# isn't supplied and the ValueError that gets thrown if an argument
-	# is supplied with a type besides that specified in the 'try' block
+    # Catches both the TypeError that gets thrown if the argument/flag
+    # isn't supplied and the ValueError that gets thrown if an argument
+    # is supplied with a type besides that specified in the 'try' block
 
-	
-	## Default Values if no argument is supplied
-	learningRate = .001
-	batchSize = 256
-	numLayers = 4
-	
-	## args.learningRate
-	try:
-		learningRate = float(args.learningRate)
-		print("Learning Rate: %f" % learningRate)
-	except:
-		print("Learning Rate: %f (Default)" % learningRate)
 
-	## args.batchSize
-	try:
-		batchSize = int(args.batchSize)
-		print("Batch Size: %i" % batchSize)
-	except:
-		print("Batch Size: %i (Default)" % batchSize)
-		
-	## args.numLayers
-	try:
-		numLayers = int(args.numLayers)
-		print("Number of Layers: %i" % numLayers)
-	except:
-		print("Number of Layers: %i (Default)" % numLayers)
+    ## Default Values if no argument is supplied
+    learningRate = .001
+    batchSize = 256
+    numLayers = 4
 
-	##########################################
-	## INITIALIZE TRAINING OBJECT AND TRAIN ##
-	##########################################
-	
-	mytrain = init_train(learningRate, batchSize, numLayers)
-	train(mytrain)
+    ## args.learningRate
+    try:
+        learningRate = float(args.learningRate)
+        print("Learning Rate: %f" % learningRate)
+    except:
+        print("Learning Rate: %f (Default)" % learningRate)
+
+    ## args.batchSize
+    try:
+        batchSize = int(args.batchSize)
+        print("Batch Size: %i" % batchSize)
+    except:
+        print("Batch Size: %i (Default)" % batchSize)
+
+    ## args.numLayers
+    try:
+        numLayers = int(args.numLayers)
+        print("Number of Layers: %i" % numLayers)
+    except:
+        print("Number of Layers: %i (Default)" % numLayers)
+
+    ##########################################
+    ## INITIALIZE TRAINING OBJECT AND TRAIN ##
+    ##########################################
+
+    mytrain = init_train(learningRate, batchSize, numLayers, timeout, maxEpochs)
+    train(mytrain)
+
+if __name__ == "__main__":              # EDITED
+    run()
