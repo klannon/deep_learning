@@ -7,11 +7,13 @@
 from __future__ import print_function
 import sys
 import os
+import os.path
 import theano
 import argparse
 from math import floor
 import physics # in order for this to not give an ImportError, need to
 # set PYTHONPATH (see README.md)
+from profiling.terminators import Timeout
 print(physics.__file__)
 
 import pylearn2
@@ -22,13 +24,13 @@ import pylearn2.space
 import pylearn2.termination_criteria
 
 
-def init_train(learningRate, batchSize, numLayers, numEpochs,
-               nodesPerLayer):
-    hostname = os.environ["HOST"] # So scripts can be run simultaneously on different machines
-    idpath = os.getcwd()
-    idpath += "/results/"
-    idpath += hostname
-    idpath += ("_layers%s" % numLayers)
+def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
+               timeout=None, maxEpochs=None):               # EDITED
+    hostname = os.getenv("HOST", os.getpid()) # So scripts can be run simultaneously on different machines
+    results_dir = "{1}{0}results{0}".format(os.sep, os.getcwd())
+    if not os.path.isdir(results_dir):
+        os.mkdir(results_dir)
+    idpath = "{}{}_layers{}".format(results_dir, hostname, numLayers)
     print(idpath)
     save_path = idpath + '.pkl'
 
@@ -69,6 +71,16 @@ def init_train(learningRate, batchSize, numLayers, numEpochs,
     print(network_layers)
     model = pylearn2.models.mlp.MLP(layers=network_layers,
                                      nvis=nvis)
+
+    # Configure when the training will terminate
+    if timeout:
+        terminator = Timeout(timeout*60) # Timeout takes an argument in seconds, so timeout is in minutes
+    elif maxEpochs:
+        terminator = pylearn2.termination_criteria.EpochCounter(max_epochs=maxEpochs)
+    else:
+        terminator = None
+
+    # Algorithm
     algorithm = pylearn2.training_algorithms.sgd.SGD(
         batch_size=batchSize,
         learning_rate=learningRate,
@@ -80,8 +92,7 @@ def init_train(learningRate, batchSize, numLayers, numEpochs,
         #     decay_factor=1.0000003, # Decreases by this factor every batch. (1/(1.000001^8000)^100 
         #     min_lr=.000001
         # ),
-        termination_criterion = pylearn2.termination_criteria.EpochCounter(
-                max_epochs = numEpochs)
+        termination_criterion=terminator
     )
     # Train
     train = pylearn2.train.Train(dataset=dataset_train,
@@ -91,22 +102,30 @@ def init_train(learningRate, batchSize, numLayers, numEpochs,
                                  save_freq=100)
     return train
 
-def train(mytrain):
+
+def train(mytrain, batchSize, timeout, maxEpochs):
     # Execute training loop.
     logfile = os.path.splitext(mytrain.save_path)[0] + '.log'
     print('Using=%s' % theano.config.device) # Can use gpus.
     print('Writing to %s' % logfile)
     print('Writing to %s' % mytrain.save_path)
-    sys.stdout = open(logfile, 'w') # print statements after here are
-    # written to the log file
+    sys.stdout = open(logfile, 'w')
+    #
+    # print statements after here are written to the log file
+    #
     print("opened log file")
     print("Model:")
     print(mytrain.model)
     print("\n\nAlgorithm:")
     print(mytrain.algorithm)
+    print("\n\nAdditional Hyperparameters:")
+    print("Batch size: %i" % batchSize)
+    print("Maximum Epochs: %i" % maxEpochs)
+    print("Maximum runtime: %f minutes" % timeout)
+    # All of the other  hyperparameters can be deduced from the log file
     mytrain.main_loop()
 
-if __name__ == "__main__":
+def run(timeout=None, maxEpochs=100):
 	parser = argparse.ArgumentParser()
 
 	###################################
@@ -118,7 +137,7 @@ if __name__ == "__main__":
 	                    + "(subset of training set)")
 	parser.add_argument("-l", "--numLayers",
 	                    help="number of hidden layers in the network")
-	parser.add_argument("-e", "--numEpochs",
+	parser.add_argument("-e", "--maxEpochs",
 	                    help="number of epochs to run for")
 	parser.add_argument("-n", "--nodesPerLayer",
 	                    help="number of nodes per layer")
@@ -137,8 +156,8 @@ if __name__ == "__main__":
 	learningRate = .001
 	batchSize = 256
 	numLayers = 4
-	numEpochs = 100
 	nodesPerLayer = 50
+	# maxEpochs is specified in the call to run()
 	
 	## args.learningRate
 	try:
@@ -161,12 +180,12 @@ if __name__ == "__main__":
 	except:
 		print("Number of Layers: %i (Default)" % numLayers)
 
-	## args.numEpochs
+	## args.maxEpochs
 	try:
-		numEpochs = int(args.numEpochs)
-		print("Number of Epochs to run for: %i" % numEpochs)
+		maxEpochs = int(args.maxEpochs)
+		print("Number of Epochs to run for: %i" % maxEpochs)
 	except:
-		print("Number of Epochs to run for: %i (Default)" % numEpochs)
+		print("Number of Epochs to run for: %i (Default)" % maxEpochs)
 
 	## args.nodesPerLayer
 	try:
@@ -180,7 +199,17 @@ if __name__ == "__main__":
 	##########################################
 	## INITIALIZE TRAINING OBJECT AND TRAIN ##
 	##########################################
+
+	learningRate = .001
+	batchSize = 256
+	numLayers = 4
+	nodesPerLayer = 50
+	# maxEpochs is specified in the call to run()
+
 	
-	mytrain = init_train(learningRate, batchSize, numLayers, numEpochs,
-	                     nodesPerLayer)
-	train(mytrain)
+	mytrain = init_train(learningRate, batchSize, numLayers,
+	                     nodesPerLayer, timeout, maxEpochs)
+	train(mytrain, batchSize, timeout, maxEpochs)
+
+if __name__ == "__main__":
+    run()
