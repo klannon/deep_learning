@@ -22,7 +22,8 @@ import pylearn2.space
 import pylearn2.termination_criteria
 
 
-def init_train(learningRate, batchSize, numLayers):
+def init_train(learningRate, batchSize, numLayers, numEpochs,
+               nodesPerLayer):
     hostname = os.environ["HOST"] # So scripts can be run simultaneously on different machines
     idpath = os.getcwd()
     idpath += "/results/"
@@ -57,7 +58,7 @@ def init_train(learningRate, batchSize, numLayers):
     while(count <= numLayers):
         network_layers.append(mlp.RectifiedLinear(
             layer_name=('r%i' % count),
-            dim=100,
+            dim=nodesPerLayer,
             istdev=.1))
         count += 1
     # add final layer
@@ -68,10 +69,9 @@ def init_train(learningRate, batchSize, numLayers):
     print(network_layers)
     model = pylearn2.models.mlp.MLP(layers=network_layers,
                                      nvis=nvis)
-    # Algorithm
     algorithm = pylearn2.training_algorithms.sgd.SGD(
-        batch_size=32,
-        learning_rate=.001,
+        batch_size=batchSize,
+        learning_rate=learningRate,
         monitoring_dataset = {'train':dataset_train_monitor,
                               'valid':dataset_valid,
                               'test':dataset_test
@@ -81,7 +81,7 @@ def init_train(learningRate, batchSize, numLayers):
         #     min_lr=.000001
         # ),
         termination_criterion = pylearn2.termination_criteria.EpochCounter(
-                max_epochs = 3)
+                max_epochs = numEpochs)
     )
     # Train
     train = pylearn2.train.Train(dataset=dataset_train,
@@ -97,8 +97,13 @@ def train(mytrain):
     print('Using=%s' % theano.config.device) # Can use gpus.
     print('Writing to %s' % logfile)
     print('Writing to %s' % mytrain.save_path)
-    sys.stdout = open(logfile, 'w')
+    sys.stdout = open(logfile, 'w') # print statements after here are
+    # written to the log file
     print("opened log file")
+    print("Model:")
+    print(mytrain.model)
+    print("\n\nAlgorithm:")
+    print(mytrain.algorithm)
     mytrain.main_loop()
 
 if __name__ == "__main__":
@@ -113,6 +118,10 @@ if __name__ == "__main__":
 	                    + "(subset of training set)")
 	parser.add_argument("-l", "--numLayers",
 	                    help="number of hidden layers in the network")
+	parser.add_argument("-e", "--numEpochs",
+	                    help="number of epochs to run for")
+	parser.add_argument("-n", "--nodesPerLayer",
+	                    help="number of nodes per layer")
 	args = parser.parse_args()
 
 	########################
@@ -128,6 +137,8 @@ if __name__ == "__main__":
 	learningRate = .001
 	batchSize = 256
 	numLayers = 4
+	numEpochs = 100
+	nodesPerLayer = 50
 	
 	## args.learningRate
 	try:
@@ -150,9 +161,26 @@ if __name__ == "__main__":
 	except:
 		print("Number of Layers: %i (Default)" % numLayers)
 
+	## args.numEpochs
+	try:
+		numEpochs = int(args.numEpochs)
+		print("Number of Epochs to run for: %i" % numEpochs)
+	except:
+		print("Number of Epochs to run for: %i (Default)" % numEpochs)
+
+	## args.nodesPerLayer
+	try:
+		numEpochs = int(args.nodesPerLayer)
+		print("Number of nodes per layer: %i" % nodesPerLayer)
+	except:
+		print("Number of nodes per layer: %i (Default)" %
+		      nodesPerLayer)
+
+
 	##########################################
 	## INITIALIZE TRAINING OBJECT AND TRAIN ##
 	##########################################
 	
-	mytrain = init_train(learningRate, batchSize, numLayers)
+	mytrain = init_train(learningRate, batchSize, numLayers, numEpochs,
+	                     nodesPerLayer)
 	train(mytrain)
