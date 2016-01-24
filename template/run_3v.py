@@ -126,90 +126,90 @@ def train(mytrain, batchSize, timeout, maxEpochs):
     mytrain.main_loop()
 
 def run(timeout=None, maxEpochs=100):
-	parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-	###################################
-	## SET UP COMMAND LINE ARGUMENTS ##
-	###################################
+    ###################################
+    ## SET UP COMMAND LINE ARGUMENTS ##
+    ###################################
 
-	parser.add_argument("-r", "--learningRate", help="learning rate")
-	parser.add_argument("-b", "--batchSize", help="size of each batch "
-	                    + "(subset of training set)")
-	parser.add_argument("-l", "--numLayers",
-	                    help="number of hidden layers in the network")
-	parser.add_argument("-e", "--maxEpochs",
-	                    help="number of epochs to run for")
-	parser.add_argument("-n", "--nodesPerLayer",
-	                    help="number of nodes per layer")
-	args = parser.parse_args()
+    parser.add_argument("-r", "--learningRate", help="learning rate")
+    parser.add_argument("-b", "--batchSize", help="size of each batch "
+                        + "(subset of training set)")
+    parser.add_argument("-l", "--numLayers",
+                        help="number of hidden layers in the network")
+    parser.add_argument("-e", "--maxEpochs",
+                        help="number of epochs to run for")
+    parser.add_argument("-n", "--nodesPerLayer",
+                        help="number of nodes per layer")
+    args = parser.parse_args()
 
-	########################
-	## VALIDATE ARGUMENTS ##
-	########################
+    ########################
+    ## VALIDATE ARGUMENTS ##
+    ########################
 
-	# Catches both the TypeError that gets thrown if the argument/flag
-	# isn't supplied and the ValueError that gets thrown if an argument
-	# is supplied with a type besides that specified in the 'try' block
-
-	
-	## Default Values if no argument is supplied
-	learningRate = .001
-	batchSize = 256
-	numLayers = 4
-	nodesPerLayer = 50
-	# maxEpochs is specified in the call to run()
-	
-	## args.learningRate
-	try:
-		learningRate = float(args.learningRate)
-		print("Learning Rate: %f" % learningRate)
-	except:
-		print("Learning Rate: %f (Default)" % learningRate)
-
-	## args.batchSize
-	try:
-		batchSize = int(args.batchSize)
-		print("Batch Size: %i" % batchSize)
-	except:
-		print("Batch Size: %i (Default)" % batchSize)
-		
-	## args.numLayers
-	try:
-		numLayers = int(args.numLayers)
-		print("Number of Layers: %i" % numLayers)
-	except:
-		print("Number of Layers: %i (Default)" % numLayers)
-
-	## args.maxEpochs
-	try:
-		maxEpochs = int(args.maxEpochs)
-		print("Number of Epochs to run for: %i" % maxEpochs)
-	except:
-		print("Number of Epochs to run for: %i (Default)" % maxEpochs)
-
-	## args.nodesPerLayer
-	try:
-		numEpochs = int(args.nodesPerLayer)
-		print("Number of nodes per layer: %i" % nodesPerLayer)
-	except:
-		print("Number of nodes per layer: %i (Default)" %
-		      nodesPerLayer)
+    # Catches both the TypeError that gets thrown if the argument/flag
+    # isn't supplied and the ValueError that gets thrown if an argument
+    # is supplied with a type besides that specified in the 'try' block
 
 
-	##########################################
-	## INITIALIZE TRAINING OBJECT AND TRAIN ##
-	##########################################
+    ## Default Values if no argument is supplied
+    learningRate = .001
+    batchSize = 256
+    numLayers = 4
+    nodesPerLayer = 50
+    # maxEpochs is specified in the call to run()
 
-	learningRate = .001
-	batchSize = 256
-	numLayers = 4
-	nodesPerLayer = 50
-	# maxEpochs is specified in the call to run()
+    ## args.learningRate
+    try:
+        learningRate = float(args.learningRate)
+        print("Learning Rate: %f" % learningRate)
+    except:
+        print("Learning Rate: %f (Default)" % learningRate)
 
-	
-	mytrain = init_train(learningRate, batchSize, numLayers,
-	                     nodesPerLayer, timeout, maxEpochs)
-	train(mytrain, batchSize, timeout, maxEpochs)
+    ## args.batchSize
+    try:
+        batchSize = int(args.batchSize)
+        print("Batch Size: %i" % batchSize)
+    except:
+        print("Batch Size: %i (Default)" % batchSize)
+
+    ## args.numLayers
+    try:
+        numLayers = int(args.numLayers)
+        print("Number of Layers: %i" % numLayers)
+    except:
+        print("Number of Layers: %i (Default)" % numLayers)
+
+    ## args.maxEpochs
+    try:
+        maxEpochs = int(args.maxEpochs)
+        print("Number of Epochs to run for: %i" % maxEpochs)
+    except:
+        print("Number of Epochs to run for: %i (Default)" % maxEpochs)
+
+    ## args.nodesPerLayer
+    try:
+        numEpochs = int(args.nodesPerLayer)
+        print("Number of nodes per layer: %i" % nodesPerLayer)
+    except:
+        print("Number of nodes per layer: %i (Default)" %
+              nodesPerLayer)
+
+
+    ##########################################
+    ## INITIALIZE TRAINING OBJECT AND TRAIN ##
+    ##########################################
+
+    learningRate = .001
+    batchSize = 256
+    numLayers = 4
+    nodesPerLayer = 50
+    # maxEpochs is specified in the call to run()
+
+
+    mytrain = init_train(learningRate, batchSize, numLayers,
+                         nodesPerLayer, timeout, maxEpochs)
+    train(mytrain, batchSize, timeout, maxEpochs)
 
 if __name__ == "__main__":
     run()
