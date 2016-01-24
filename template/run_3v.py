@@ -200,13 +200,6 @@ def run(timeout=None, maxEpochs=100):
     ## INITIALIZE TRAINING OBJECT AND TRAIN ##
     ##########################################
 
-    learningRate = .001
-    batchSize = 256
-    numLayers = 4
-    nodesPerLayer = 50
-    # maxEpochs is specified in the call to run()
-
-
     mytrain = init_train(learningRate, batchSize, numLayers,
                          nodesPerLayer, timeout, maxEpochs)
     train(mytrain, batchSize, timeout, maxEpochs)
