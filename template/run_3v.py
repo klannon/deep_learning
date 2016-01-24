@@ -15,6 +15,7 @@ import physics # in order for this to not give an ImportError, need to
 # set PYTHONPATH (see README.md)
 from profiling.terminators import Timeout
 print(physics.__file__)
+import datetime
 
 import pylearn2
 import pylearn2.training_algorithms.sgd
@@ -30,8 +31,8 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
     results_dir = "{1}{0}results{0}".format(os.sep, os.getcwd())
     if not os.path.isdir(results_dir):
         os.mkdir(results_dir)
-    idpath = "{}{}_layers{}".format(results_dir, hostname, numLayers)
-    print(idpath)
+    idpath = "{}{}_layers{}_batchSize{}_nodes{}_time{}".format(results_dir, hostname, numLayers, batchSize, nodesPerLayer, datetime.datetime.now().time())
+    print(idpath) # ...now our save file name is foolproof
     save_path = idpath + '.pkl'
 
     # Dataset
@@ -121,7 +122,8 @@ def train(mytrain, batchSize, timeout, maxEpochs):
     print("\n\nAdditional Hyperparameters:")
     print("Batch size: %i" % batchSize)
     print("Maximum Epochs: %i" % maxEpochs)
-    print("Maximum runtime: %f minutes" % timeout)
+    if timeout:
+	    print("Maximum runtime: %f minutes" % timeout)
     # All of the other  hyperparameters can be deduced from the log file
     mytrain.main_loop()
 
