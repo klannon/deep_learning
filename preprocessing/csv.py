@@ -203,16 +203,24 @@ def saveData(pathToData,
 
     if trainFraction == 1:
         np.save(savePath+"_X", trainData['data'])
+        print("Saved Train Array: "+savePath+"_X")
         np.save(savePath+"_Y", trainData['labels'])
+        print("Saved Train Array: "+savePath+"_Y")
     elif trainFraction == 0:
         np.save(savePath+"_X", testData['data'])
+        print("Saved Test Array: "+savePath+"_X")
         np.save(savePath+"_Y", testData['labels'])
+        print("Saved Test Array: "+savePath+"_Y")
     else:
         np.save(savePath+"_training_X", trainData['data'])
+        print("Saved Array: "+savePath+"_training_X")
         np.save(savePath+"_training_Y", trainData['labels'])
+        print("Saved Array: "+savePath+"_training_Y")
 
         np.save(savePath+"_testing_X", testData['data'])
+        print("Saved Array: "+savePath+"_testing_X")
         np.save(savePath+"_testing_Y", testData['labels'])
+        print("Saved Array: "+savePath+"_testing_Y")
 
     return None
 
