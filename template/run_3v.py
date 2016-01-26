@@ -10,12 +10,11 @@ import os
 import os.path
 import theano
 import argparse
-from math import floor
-import physics # in order for this to not give an ImportError, need to
+from physics import PHYSICS # in order for this to not give an ImportError, need to
 # set PYTHONPATH (see README.md)
 from profiling.terminators import Timeout
-print(physics.__file__)
-import datetime
+from time import time
+#print(physics.__file__)
 
 import pylearn2
 import pylearn2.training_algorithms.sgd
@@ -31,26 +30,24 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
     results_dir = "{1}{0}results{0}".format(os.sep, os.getcwd())
     if not os.path.isdir(results_dir):
         os.mkdir(results_dir)
-    idpath = "{}{}_layers{}_batchSize{}_nodes{}_time{}".format(results_dir, hostname, numLayers, batchSize, nodesPerLayer, datetime.datetime.now().time())
+    idpath = "{}{}_layers{}_batchSize{}_nodes{}_time{}".format(results_dir, hostname, numLayers, batchSize, nodesPerLayer, time())
     print(idpath) # ...now our save file name is foolproof
     save_path = idpath + '.pkl'
 
     # Dataset
-    pathToTrainValidData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'train_all_3v_ttbar_wjet.txt'
-    pathToTestData = os.environ['PYLEARN2_DATA_PATH']+os.sep+'test_all_3v_ttbar_wjet.txt'
-    
-    train_fraction = 0.8 # 1700000 in train file for train and valid
-    numLabels = 2 # Number of output nodes...softmax interpretation here
-    
-    dataset_train, dataset_valid, dataset_test  = physics.PHYSICS(pathToTrainValidData,
-                                                                  pathToTestData,
-                                                                  train_fraction,
-                                                                  numLabels=numLabels)
+    pylearn_path = os.environ['PYLEARN2_DATA_PATH']+os.sep
+    path_to_train_X, path_to_train_Y = pylearn_path+'train_all_3v_ttbar_wjet_X.npy', pylearn_path+'train_all_3v_ttbar_wjet_Y.npy'
+    path_to_test_X, path_to_test_Y = pylearn_path+'test_all_3v_ttbar_wjet_X.npy', pylearn_path+'test_all_3v_ttbar_wjet_Y.npy'
+
+    dataset_train, dataset_test = PHYSICS(), PHYSICS()
+    dataset_train.load_from_file(path_to_train_X, path_to_train_Y)
+    dataset_test.load_from_file(path_to_test_X, path_to_test_Y)
+
     # For monitoring updates without having to read in a file again.
-    monitor_percent = 0.02*train_fraction
-    cutoff = floor(monitor_percent*len(dataset_train.X))
-    data_dict = {'data': dataset_train.X[:cutoff, :], 'labels': dataset_train.y[:cutoff], 'size': lambda: (cutoff, dataset_train.X.shape[1])}
-    dataset_train_monitor = physics._PHYSICS(data_dict, 'monitor', dataset_train.args['benchmark'])
+    #monitor_percent = 0.02*train_fraction
+    #cutoff = floor(monitor_percent*len(dataset_train.X))
+    #data_dict = {'data': dataset_train.X[:cutoff, :], 'labels': dataset_train.y[:cutoff], 'size': lambda: (cutoff, dataset_train.X.shape[1])}
+    #dataset_train_monitor = physics._PHYSICS(data_dict, 'monitor', dataset_train.args['benchmark'])
 
 
     nvis = dataset_train.X.shape[1] # number of visible layers
@@ -85,9 +82,8 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
     algorithm = pylearn2.training_algorithms.sgd.SGD(
         batch_size=batchSize,
         learning_rate=learningRate,
-        monitoring_dataset = {'train':dataset_train_monitor,
-                              'valid':dataset_valid,
-                              'test':dataset_test
+        monitoring_dataset = {'train': dataset_train,
+                              'test': dataset_test
                           },
         # update_callbacks=pylearn2.training_algorithms.sgd.ExponentialDecay(
         #     decay_factor=1.0000003, # Decreases by this factor every batch. (1/(1.000001^8000)^100 
@@ -122,8 +118,7 @@ def train(mytrain, batchSize, timeout, maxEpochs):
     print("\n\nAdditional Hyperparameters:")
     print("Batch size: %i" % batchSize)
     print("Maximum Epochs: %i" % maxEpochs)
-    if timeout:
-	    print("Maximum runtime: %f minutes" % timeout)
+    print("Maximum runtime: %f minutes" % timeout) if timeout else print("Maximum runtime: None")
     # All of the other  hyperparameters can be deduced from the log file
     mytrain.main_loop()
 
@@ -191,7 +186,7 @@ def run(timeout=None, maxEpochs=100):
 
     ## args.nodesPerLayer
     try:
-        numEpochs = int(args.nodesPerLayer)
+        nodesPerLayer = int(args.nodesPerLayer)
         print("Number of nodes per layer: %i" % nodesPerLayer)
     except:
         print("Number of nodes per layer: %i (Default)" %

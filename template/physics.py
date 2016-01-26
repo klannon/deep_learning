@@ -8,45 +8,31 @@
 # ---------------------------------------------------------------------
 
 from pylearn2.datasets import dense_design_matrix
-from pylearn2.datasets import control
-from pylearn2.utils import serial
-import os
 import numpy as np
-import pickle as pkl
-import csv
-import os
 
+class PHYSICS(dense_design_matrix.DenseDesignMatrix):
 
-def PHYSICS(pathToTrainValidData,
-            pathToTestData,
-            trainFraction,
-            *args,
-            **kwargs):
-
-    benchmark_1 = pathToTrainValidData.split(os.sep)[-1].split('.')[0] # Returns the name of the file without its extension
-    benchmark_2 = pathToTestData.split(os.sep)[-1].split('.')[0]
-
-    train, valid = csv.getData(pathToTrainValidData, trainFraction, benchmark=benchmark_1, **kwargs)
-    test = csv.getData(pathToTestData, 0, benchmark=benchmark_2, **kwargs)
-
-    return (_PHYSICS(train, 'train', benchmark_1),
-            _PHYSICS(valid, 'valid', benchmark_1),
-            _PHYSICS(test, 'test', benchmark_2))
-
-class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
-    def __init__(self,
-                 data,
-                 which_set='?',
-                 benchmark=''):
-
+    def __init__(self, data_X=None, data_Y=None, benchmark='', which_set='?'):
         self.args = locals()
 
-        # Need to allocate two arrays X (inputs) and y (targets)
-        print 'Data loaded: {} ({})'.format(benchmark, which_set)
+        # Initialize the superclass. DenseDesignMatrix
+        if data_X:
+            super(PHYSICS, self).__init__(X=data_X, y=data_Y)
+
+    def load_data(self, data_X, data_Y=None, benchmark='', which_set='?'):
 
         # Initialize the superclass. DenseDesignMatrix
-        super(_PHYSICS, self).__init__(X=data['data'], y=data['labels'])
-        
+        super(PHYSICS, self).__init__(X=data_X, y=data_Y)
+
+        print 'Data loaded: {} ({})'.format(benchmark, which_set)
+
+    def load_from_file(self, path_to_X, path_to_Y, benchmark='', which_set='?'):
+
+        X = np.load(path_to_X)
+        Y = np.load(path_to_Y)
+
+        self.load_data(X, Y, benchmark, which_set)
+
     def standardize(self, X):
         """
         Standardize each feature:
@@ -64,6 +50,3 @@ class _PHYSICS(dense_design_matrix.DenseDesignMatrix):
                 vec = vec / np.mean(vec)
             X[:,j] = vec
         return X
-
-if __name__ == '__main__':
-    PHYSICS('../OSUtorch/train_all_3v_ttbar_wjet.txt', '../OSUtorch/test_all_3v_ttbar_wjet.txt', 0.8, numLabels=2)

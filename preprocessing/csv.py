@@ -2,6 +2,8 @@ from __future__ import print_function
 import numpy as np
 from math import floor
 import re
+import os.path
+import argparse
 
 __author__ = 'Matthew Drnevich'
 
@@ -17,6 +19,8 @@ def readFile(pathToData, *args, **kwargs):
         benchmark : a string that is associated with certain file sizes.
             It is recommended to use the file's name for this argument
             which will then set nrows accordingly.
+
+        **This defaults to the filename, which is safe.
 
         nrows : number of rows of data to be read in
             If provided this will speed up the program by not requiring
@@ -57,18 +61,21 @@ def readFile(pathToData, *args, **kwargs):
     d.update(kwargs)
 
     # Define variables
-    nrows = d['nrows']
-    benchmark = d['benchmark']
-    xcolmin = d['xcolmin']
-    xcolmax = d['xcolmax']
+    nrows = int(d['nrows']) if d['nrows'] else None
+    benchmark = d['benchmark'] if d['benchmark'] else ''
+    xcolmin = int(d['xcolmin']) if d['xcolmin'] else 1
+    xcolmax = int(d['xcolmax']) if d['xcolmax'] else None
     numLabels = d['numLabels']
-    sep = d['sep']
+    sep = d['sep'] if d['sep'] else '(\-?\d+\.?\d*e?(?:\+|\-)?\d*)'
 
-    # If the number of rows isn't given the derive it from benchmark or count it.
+    if not benchmark:
+        benchmark = pathToData.split(os.sep)[-1].split('.')[0]
+
+    # If the number of rows isn't given then derive it from benchmark or count it.
     if nrows is not int:
-        if 'test' in benchmark:
+        if 'test_all' in benchmark:
             nrows = 90000
-        elif 'train' in benchmark:
+        elif 'train_all' in benchmark:
             nrows = 1700000
         else:
             count = 0
@@ -77,7 +84,7 @@ def readFile(pathToData, *args, **kwargs):
                     count += 1
             nrows = count
 
-    print("Loading %s, which has %i rows" %(pathToData, nrows))
+    print("Loading %s, which has %i rows" % (pathToData, nrows))
 
     nread = 0
     # Define the range that the labels can be within
@@ -122,7 +129,7 @@ def readFile(pathToData, *args, **kwargs):
         temp = label + temp
         data[nread] = temp
         nread += 1
-        if (nread % 10000 == 0):
+        if nread % 10000 == 0:
             print(nread)
         if nread > nrows:
             break
@@ -131,20 +138,18 @@ def readFile(pathToData, *args, **kwargs):
     return data, data.shape[0], data.shape[1]
 
 # Changing default value of trainFraction because skipping the randomization of data should not be encouraged
-def getData(pathToData,
-            trainFraction=1.0,
-            numLabels=1,
-            *args,
-            **kwargs):
+def saveData(pathToData,
+             trainFraction=1.0,
+             numLabels=1,
+             *args,
+             **kwargs):
     """
-    loads data from a file
+    loads data from a file and saves it as a .npy file
 
     This function loads data from the file located at pathToData and
-    splits it into training and validation sets if necessary.
-    @getData is sensitive to whether the data needs to be split up into
-    subsets (the assumption is splitting a file that contains training
-    and validation data into subsets.  Testing data is assumed to be
-    provided in its own file).
+    splits it into training and testing sets if necessary. Each set
+    will then be saved as a <file>.npy binary numpy array with some
+    text appended to its name that designates which set it is.
 
     Parameters
     ----------
@@ -156,7 +161,7 @@ def getData(pathToData,
         Number less than 1 indicating how much of the data in the file
         is for training.
 
-    **Note: validFraction = 1 - trainFraction
+        **Note: testFraction = 1 - trainFraction
 
     numLabels : the number of labels your network will output
             Your data file should only have one column of numbers
@@ -166,36 +171,61 @@ def getData(pathToData,
             in [1,numLabels] such that the number indicates which node
             produced a value of 1 (assumes a softmax output layer).
 
-    kwargs : These are arguments to be pass into readFile
+    kwargs : These are arguments to be passed into readFile (i.e. look at readFile's docstring).
     """
+
+    # Defaults to overwrite argparse strings
+    numLabels = int(numLabels) if numLabels else 1
+    trainFraction = float(trainFraction) if trainFraction else 1.0
+
     data, dataROWS, dataCOLS = readFile(pathToData, *args, numLabels=numLabels, **kwargs)
 
-    # Don't do this if you want data for training, it needs to be shuffled....only for testing, not training
-    if not trainFraction:
-        testData = {'data': data[:, numLabels:], 'size': lambda: (dataROWS, data.shape[1])}
-        if numLabels == 1:
-            testData['labels'] = data[:, 0:numLabels].reshape(dataROWS, 1)
-        else:
-            testData['labels'] = data[:, 0:numLabels]
-        return testData
-
     # This defines the last row that will be used for training data
-    # The rest of the data will be used for validation data.
+    # The rest of the data will be used for testing data.
     trCutoff = floor(trainFraction*dataROWS)
 
     # Randomize the data
     np.random.shuffle(data)
 
     # Create dictionaries of the data with keys: 'data', 'labels', and 'size'. Note that size is a function.
-    trainData = {'data': data[:trCutoff, numLabels:], 'size': lambda: (trCutoff, data.shape[1])}
-    valData = {'data': data[trCutoff:, numLabels:], 'size': lambda: (dataROWS-trCutoff, data.shape[1])}
+    trainData = {'data': data[:trCutoff, numLabels:]}
+    testData = {'data': data[trCutoff:, numLabels:]}
 
     # Reshape the 'labels' array if necessary because numpy can be dumb.
     if numLabels == 1:
         trainData['labels'] = data[:trCutoff, 0:numLabels].reshape(trCutoff, 1)
-        valData['labels'] = data[trCutoff:, 0:numLabels].reshape(dataROWS-trCutoff, 1)
+        testData['labels'] = data[trCutoff:, 0:numLabels].reshape(dataROWS-trCutoff, 1)
     else:
         trainData['labels'] = data[:trCutoff, 0:numLabels]
-        valData['labels'] = data[trCutoff:, 0:numLabels]
+        testData['labels'] = data[trCutoff:, 0:numLabels]
 
-    return trainData, valData
+    savePath = os.path.splitext(pathToData)[0]
+
+    if trainFraction == 1:
+        np.save(savePath+"_X", trainData['data'])
+        np.save(savePath+"_Y", trainData['labels'])
+    elif trainFraction == 0:
+        np.save(savePath+"_X", testData['data'])
+        np.save(savePath+"_Y", testData['labels'])
+    else:
+        np.save(savePath+"_training_X", trainData['data'])
+        np.save(savePath+"_training_Y", trainData['labels'])
+
+        np.save(savePath+"_testing_X", testData['data'])
+        np.save(savePath+"_testing_Y", testData['labels'])
+
+    return None
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--pathToData", help="path to your data file")
+    parser.add_argument("-t", "--trainFraction", help="fraction of your data for training")
+    parser.add_argument("-l", "--numLabels", help="number of output nodes (softmax)")
+    parser.add_argument("-b", "--benchmark", help="keywords for shortcuts (default is safe)")
+    parser.add_argument("-n", "--nrows", help="number of rows of data to read in")
+    parser.add_argument("-a", "--xcolmin", help="first column of data")
+    parser.add_argument("-z", "--xcolmax", help="last column of data")
+    parser.add_argument("-s", "--sep", help="data format to isolate (reg-ex)")
+    kwargs = parser.parse_args()
+
+    saveData(**vars(kwargs))
