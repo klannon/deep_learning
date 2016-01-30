@@ -23,6 +23,8 @@ import pylearn2.train
 import pylearn2.space
 import pylearn2.termination_criteria
 
+from monitoring import TrainVeil, make_data_slim
+
 
 def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
                timeout=None, maxEpochs=None):               # EDITED
@@ -78,13 +80,15 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
     else:
         terminator = None
 
+    monitor_train, monitor_test = make_data_slim((dataset_train, dataset_test))
+
+
     # Algorithm
     algorithm = pylearn2.training_algorithms.sgd.SGD(
         batch_size=batchSize,
         learning_rate=learningRate,
-        monitoring_dataset = {'train': dataset_train,
-                              'test': dataset_test
-                          },
+        monitoring_dataset={'train': monitor_train,
+                              'test': monitor_test},
         # update_callbacks=pylearn2.training_algorithms.sgd.ExponentialDecay(
         #     decay_factor=1.0000003, # Decreases by this factor every batch. (1/(1.000001^8000)^100 
         #     min_lr=.000001
@@ -97,6 +101,9 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
                                  algorithm=algorithm,
                                  save_path=save_path,
                                  save_freq=100)
+
+    TrainVeil(train)
+
     return train
 
 
@@ -138,6 +145,8 @@ def run(timeout=None, maxEpochs=100):
                         help="number of epochs to run for")
     parser.add_argument("-n", "--nodesPerLayer",
                         help="number of nodes per layer")
+    parser.add_argument("-t", "--timeout",
+                        help="how long it should train in minutes")
     args = parser.parse_args()
 
     ########################
@@ -191,6 +200,14 @@ def run(timeout=None, maxEpochs=100):
     except:
         print("Number of nodes per layer: %i (Default)" %
               nodesPerLayer)
+
+    ## args.timeout
+    try:
+        timoue = int(args.timeout)
+        print("Timeout: %f" % timeout)
+    except:
+        print("Number of nodes per layer: {} (Default)".format(timeout)
+              if timeout else "Number of nodes per layer: None (Default)")
 
 
     ##########################################

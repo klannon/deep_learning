@@ -16,7 +16,7 @@ class PHYSICS(dense_design_matrix.DenseDesignMatrix):
         self.args = locals()
 
         # Initialize the superclass. DenseDesignMatrix
-        if data_X:
+        if isinstance(data_X, np.ndarray):
             super(PHYSICS, self).__init__(X=data_X, y=data_Y)
 
     def load_data(self, data_X, data_Y=None, benchmark='', which_set='?'):
