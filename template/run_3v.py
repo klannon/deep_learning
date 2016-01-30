@@ -45,12 +45,7 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
     dataset_train.load_from_file(path_to_train_X, path_to_train_Y)
     dataset_test.load_from_file(path_to_test_X, path_to_test_Y)
 
-    # For monitoring updates without having to read in a file again.
-    #monitor_percent = 0.02*train_fraction
-    #cutoff = floor(monitor_percent*len(dataset_train.X))
-    #data_dict = {'data': dataset_train.X[:cutoff, :], 'labels': dataset_train.y[:cutoff], 'size': lambda: (cutoff, dataset_train.X.shape[1])}
-    #dataset_train_monitor = physics._PHYSICS(data_dict, 'monitor', dataset_train.args['benchmark'])
-
+    monitor_train, monitor_test = make_data_slim((dataset_train, dataset_test))
 
     nvis = dataset_train.X.shape[1] # number of visible layers
 
@@ -79,9 +74,6 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
         terminator = pylearn2.termination_criteria.EpochCounter(max_epochs=maxEpochs)
     else:
         terminator = None
-
-    monitor_train, monitor_test = make_data_slim((dataset_train, dataset_test))
-
 
     # Algorithm
     algorithm = pylearn2.training_algorithms.sgd.SGD(
@@ -203,11 +195,11 @@ def run(timeout=None, maxEpochs=100):
 
     ## args.timeout
     try:
-        timoue = int(args.timeout)
+        timeout = int(args.timeout)
         print("Timeout: %f" % timeout)
     except:
-        print("Number of nodes per layer: {} (Default)".format(timeout)
-              if timeout else "Number of nodes per layer: None (Default)")
+        print("Timeout: {} (Default)".format(timeout)
+              if timeout else "Timeout: None (Default)")
 
 
     ##########################################
