@@ -93,7 +93,7 @@ def readFile(pathToData, *args, **kwargs):
     reader = (re.findall(sep, line) for line in open(pathToData))
 
     # If the maximum number of columns for the input data isn't provided then read the first line and count the columns.
-    # In both cases a numpy array of the proper sihape is created with all 0s.
+    # In both cases a numpy array of the proper shape is created with all 0s.
     if not xcolmax:
         firstLine = next(reader)
         rrow = filter(None, firstLine)
@@ -141,6 +141,7 @@ def readFile(pathToData, *args, **kwargs):
 def saveData(pathToData,
              trainFraction=1.0,
              numLabels=1,
+             savePath=None,
              *args,
              **kwargs):
     """
@@ -171,6 +172,10 @@ def saveData(pathToData,
             in [1,numLabels] such that the number indicates which node
             produced a value of 1 (assumes a softmax output layer).
 
+    savePath : What do you want the saved file to be named (without
+               the file extension).  If nothing is supplied, the input
+               file name is used
+
     kwargs : These are arguments to be passed into readFile (i.e. look at readFile's docstring).
     """
 
@@ -199,7 +204,8 @@ def saveData(pathToData,
         trainData['labels'] = data[:trCutoff, 0:numLabels]
         testData['labels'] = data[trCutoff:, 0:numLabels]
 
-    savePath = os.path.splitext(pathToData)[0]
+    if (savePath == None):
+        savePath = os.path.splitext(pathToData)[0]
 
     if trainFraction == 1:
         np.save(savePath+"_X", trainData['data'])
@@ -211,7 +217,7 @@ def saveData(pathToData,
         print("Saved Test Array: "+savePath+"_X")
         np.save(savePath+"_Y", testData['labels'])
         print("Saved Test Array: "+savePath+"_Y")
-    else:
+    else: # if the file is part Train and part Test
         np.save(savePath+"_training_X", trainData['data'])
         print("Saved Array: "+savePath+"_training_X")
         np.save(savePath+"_training_Y", trainData['labels'])
@@ -232,8 +238,10 @@ if __name__ == '__main__':
     parser.add_argument("-b", "--benchmark", help="keywords for shortcuts (default is safe)")
     parser.add_argument("-n", "--nrows", help="number of rows of data to read in")
     parser.add_argument("-a", "--xcolmin", help="first column of data")
-    parser.add_argument("-z", "--xcolmax", help="last column of data")
+    parser.add_argument("-z", "--xcolmax", help="last column of data (file will include file[xcolmin:xcolmax]  See slice documentation for more info")
     parser.add_argument("-s", "--sep", help="data format to isolate (reg-ex)")
+    parser.add_argument("-p", "--savePath",
+                        help="name of file to save the .npy file to")
     kwargs = parser.parse_args()
 
     saveData(**vars(kwargs))
