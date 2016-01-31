@@ -152,7 +152,7 @@ def run(timeout=None, maxEpochs=100):
 
     ## Default Values if no argument is supplied
     learningRate = .001
-    batchSize = 256
+    batchSize = 32
     numLayers = 4
     nodesPerLayer = 50
     # maxEpochs is specified in the call to run()
