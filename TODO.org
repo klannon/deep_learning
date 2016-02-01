@@ -1,4 +1,4 @@
-* TODO Add yaml support and preprocess the datasets into .npy files so data loading is simpler
+* TODO Add yaml support
 * TODO Experiment with stacked autoencoders and an mlp
 * TODO Manually vary learning rate by orders of magnitude (.1, .01, .001, etc)
 * TODO Experiment with varying batch sizes (the time required to train them)

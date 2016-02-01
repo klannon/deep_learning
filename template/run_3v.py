@@ -38,14 +38,14 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
 
     # Dataset
     pylearn_path = os.environ['PYLEARN2_DATA_PATH']+os.sep
-    path_to_train_X, path_to_train_Y = pylearn_path+'train_all_3v_ttbar_wjet_X.npy', pylearn_path+'train_all_3v_ttbar_wjet_Y.npy'
-    path_to_test_X, path_to_test_Y = pylearn_path+'test_all_3v_ttbar_wjet_X.npy', pylearn_path+'test_all_3v_ttbar_wjet_Y.npy'
+    path_to_train_X, path_to_train_Y = pylearn_path+'SUSY_training_X.npy', pylearn_path+'SUSY_training_Y.npy'
+    path_to_test_X, path_to_test_Y = pylearn_path+'SUSY_testing_X.npy', pylearn_path+'SUSY_testing_Y.npy'
 
     dataset_train, dataset_test = PHYSICS(), PHYSICS()
-    dataset_train.load_from_file(path_to_train_X, path_to_train_Y)
-    dataset_test.load_from_file(path_to_test_X, path_to_test_Y)
+    dataset_train.load_from_file(path_to_train_X, path_to_train_Y, benchmark='SUSY', which_set='train')
+    dataset_test.load_from_file(path_to_test_X, path_to_test_Y, benchmark='SUSY', which_set='test')
 
-    monitor_train, monitor_test = make_data_slim((dataset_train, dataset_test))
+    monitor_train, monitor_test = make_data_slim((dataset_train, dataset_test), (0.02, 0.5))
 
     nvis = dataset_train.X.shape[1] # number of visible layers
 
@@ -69,7 +69,7 @@ def init_train(learningRate, batchSize, numLayers, nodesPerLayer,
 
     # Configure when the training will terminate
     if timeout:
-        terminator = Timeout(timeout*60) # Timeout takes an argument in seconds, so timeout is in minutes
+        terminator = Timeout(timeout*60)  # Timeout takes an argument in seconds, so timeout is in minutes
     elif maxEpochs:
         terminator = pylearn2.termination_criteria.EpochCounter(max_epochs=maxEpochs)
     else:

@@ -5,7 +5,7 @@ from functools import wraps
 from pylearn2.train import Train
 from types import MethodType
 
-__author__ = 'Matt'
+__author__ = 'Matthew Drnevich'
 
 def make_data_slim(datasets, data_percent=0.02):
     """
@@ -18,21 +18,28 @@ def make_data_slim(datasets, data_percent=0.02):
     datasets : list of PHYSICS instances
         This needs to be a list of data that you want to slim down.
         The data will be returned in the same order that they are submitted.
-    data_percent : float
+    data_percent : float or list
         This is what percent of the data you would like to have returned.
+        If you submit a float then that will be used for every dataset.
+        If you submit a list then the corresponding indices will be used for
+        the respective dataset.
 
     Returns
     -------
     rval : list of PHYSICS instances
         This is a list of new PHYSICS instances that have a slimmed amount of data.
     """
+
+    if data_percent is float:
+        data_percent = [data_percent] * len(datasets)
+
     rval = []
-    for data in datasets:
+    for data, per in zip(datasets, data_percent):
         X = data.X
         Y = data.y
         total = X.shape[0]
 
-        indices = sample(xrange(total), int(data_percent*total))
+        indices = sample(xrange(total), int(per*total))
         rval.append(PHYSICS(X[indices], Y[indices]))
 
     return rval

@@ -43,7 +43,12 @@ def readFile(pathToData, *args, **kwargs):
             numLabels=1 (default) this column should contain 0s and 1s.
             If numLabels>1 then this column should contain a number
             in [1,numLabels] such that the number indicates which node
-            produced a value of 1 (assumes a softmax output layer).
+            produced a value of 1 (assumes a softmax output layer, otherwise
+            this variable has no effect).
+
+        softmax : whether you are using a softmax output for your model.
+            If false, then you most likely should have one output node
+            and set numlabels = 1 (Default).
 
         sep : A regular expression for what you are trying to isolate
             in the data file. The default will isolate any number with
@@ -53,11 +58,12 @@ def readFile(pathToData, *args, **kwargs):
 
     # Define default values and then override with user-defined values
     d = dict(benchmark='',
-                  nrows=None,
-                  xcolmin=1,
-                  xcolmax=None,
-                  numLabels=1,
-                  sep='(\-?\d+\.?\d*e?(?:\+|\-)?\d*)')
+             nrows=None,
+             xcolmin=1,
+             xcolmax=None,
+             numLabels=1,
+             softmax=True,
+             sep='(\-?\d+\.?\d*e?(?:\+|\-)?\d*)')
     d.update(kwargs)
 
     # Define variables
@@ -65,7 +71,8 @@ def readFile(pathToData, *args, **kwargs):
     benchmark = d['benchmark'] if d['benchmark'] else ''
     xcolmin = int(d['xcolmin']) if d['xcolmin'] else 1
     xcolmax = int(d['xcolmax']) if d['xcolmax'] else None
-    numLabels = d['numLabels']
+    numLabels = int(d['numLabels']) if d['numLabels'] else 1
+    softmax = bool(d['softmax']) if d['softmax'] else True
     sep = d['sep'] if d['sep'] else '(\-?\d+\.?\d*e?(?:\+|\-)?\d*)'
 
     if not benchmark:
@@ -88,7 +95,11 @@ def readFile(pathToData, *args, **kwargs):
 
     nread = 0
     # Define the range that the labels can be within
-    labelRange = map(lambda x: str(x+1), range(numLabels))
+    if softmax is True and numLabels == 1:
+        labelRange = [0, 1]
+        numLabels = 2
+    else:
+        labelRange = map(lambda x: x+1, range(numLabels))
     # Create a generator that splits each line of the file
     reader = (re.findall(sep, line) for line in open(pathToData))
 
@@ -104,9 +115,10 @@ def readFile(pathToData, *args, **kwargs):
             label = [rrow[0]]
         else:
             try:
-                ix = labelRange.index(rrow[0])
-            except ValueError:
-                raise Exception('Label in your data is not in the range of numLabels provided')
+                print(int(float((rrow[0]))), labelRange)
+                ix = labelRange.index(int(float((rrow[0]))))
+            except ValueError as e:
+                raise Exception('Label in your data is not in the range of numLabels provided:', e)
             label = [1 if num == ix else 0 for num in xrange(numLabels)]
         temp = label + temp
         data[nread] = temp
@@ -122,7 +134,7 @@ def readFile(pathToData, *args, **kwargs):
             label = [rrow[0]]
         else:
             try:
-                ix = labelRange.index(rrow[0])
+                ix = labelRange.index(int(float((rrow[0]))))
             except ValueError:
                 raise Exception('Label in your data is not in the range of numLabels provided')
             label = [1 if num == ix else 0 for num in xrange(numLabels)]
@@ -141,6 +153,7 @@ def readFile(pathToData, *args, **kwargs):
 def saveData(pathToData,
              trainFraction=1.0,
              numLabels=1,
+             softmax=True,
              savePath=None,
              *args,
              **kwargs):
@@ -172,6 +185,10 @@ def saveData(pathToData,
             in [1,numLabels] such that the number indicates which node
             produced a value of 1 (assumes a softmax output layer).
 
+    softmax : whether you are using a softmax output for your model.
+            If false, then you most likely should have one output node
+            and set numlabels = 1 (Default).
+
     savePath : What do you want the saved file to be named (without
                the file extension).  If nothing is supplied, the input
                file name is used
@@ -181,6 +198,7 @@ def saveData(pathToData,
 
     # Defaults to overwrite argparse strings
     numLabels = int(numLabels) if numLabels else 1
+    softmax = bool(softmax)
     trainFraction = float(trainFraction) if trainFraction else 1.0
 
     data, dataROWS, dataCOLS = readFile(pathToData, *args, numLabels=numLabels, **kwargs)
@@ -191,6 +209,9 @@ def saveData(pathToData,
 
     # Randomize the data
     np.random.shuffle(data)
+
+    if softmax is True and numLabels == 1:
+        numLabels = 2
 
     # Create dictionaries of the data with keys: 'data', 'labels', and 'size'. Note that size is a function.
     trainData = {'data': data[:trCutoff, numLabels:]}
@@ -235,6 +256,7 @@ if __name__ == '__main__':
     parser.add_argument("-f", "--pathToData", help="path to your data file")
     parser.add_argument("-t", "--trainFraction", help="fraction of your data for training")
     parser.add_argument("-l", "--numLabels", help="number of output nodes (softmax)")
+    parser.add_argument("-m", "--softmax", help="if your model has a softmax output or not")
     parser.add_argument("-b", "--benchmark", help="keywords for shortcuts (default is safe)")
     parser.add_argument("-n", "--nrows", help="number of rows of data to read in")
     parser.add_argument("-a", "--xcolmin", help="first column of data")
