@@ -72,7 +72,7 @@ def readFile(pathToData, *args, **kwargs):
     xcolmin = int(d['xcolmin']) if d['xcolmin'] else 1
     xcolmax = int(d['xcolmax']) if d['xcolmax'] else None
     numLabels = int(d['numLabels']) if d['numLabels'] else 1
-    softmax = bool(d['softmax']) if d['softmax'] else True
+    softmax = d['softmax']
     sep = d['sep'] if d['sep'] else '(\-?\d+\.?\d*e?(?:\+|\-)?\d*)'
 
     if not benchmark:
@@ -115,7 +115,6 @@ def readFile(pathToData, *args, **kwargs):
             label = [rrow[0]]
         else:
             try:
-                print(int(float((rrow[0]))), labelRange)
                 ix = labelRange.index(int(float((rrow[0]))))
             except ValueError as e:
                 raise Exception('Label in your data is not in the range of numLabels provided:', e)
@@ -191,15 +190,23 @@ def saveData(pathToData,
 
     savePath : What do you want the saved file to be named (without
                the file extension).  If nothing is supplied, the input
-               file name is used
+               file name is used.
 
     kwargs : These are arguments to be passed into readFile (i.e. look at readFile's docstring).
     """
 
     # Defaults to overwrite argparse strings
     numLabels = int(numLabels) if numLabels else 1
-    softmax = bool(softmax)
+    if type(softmax) is str:
+        if softmax.lower() == 'true':
+            softmax = True
+        elif softmax.lower() == 'false':
+            softmax = False
+        else:
+            raise Exception("Not a valid argument for softmax")
     trainFraction = float(trainFraction) if trainFraction else 1.0
+
+    print(numLabels)
 
     data, dataROWS, dataCOLS = readFile(pathToData, *args, numLabels=numLabels, **kwargs)
 
@@ -212,6 +219,8 @@ def saveData(pathToData,
 
     if softmax is True and numLabels == 1:
         numLabels = 2
+
+    print(numLabels)
 
     # Create dictionaries of the data with keys: 'data', 'labels', and 'size'. Note that size is a function.
     trainData = {'data': data[:trCutoff, numLabels:]}
@@ -254,16 +263,15 @@ def saveData(pathToData,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--pathToData", help="path to your data file")
-    parser.add_argument("-t", "--trainFraction", help="fraction of your data for training")
-    parser.add_argument("-l", "--numLabels", help="number of output nodes (softmax)")
-    parser.add_argument("-m", "--softmax", help="if your model has a softmax output or not")
+    parser.add_argument("-t", "--trainFraction", default=1.0, help="fraction of your data for training")
+    parser.add_argument("-l", "--numLabels", default=1, help="number of output nodes (softmax)")
+    parser.add_argument("-m", "--softmax", default=True, help="if your model has a softmax output or not")
     parser.add_argument("-b", "--benchmark", help="keywords for shortcuts (default is safe)")
     parser.add_argument("-n", "--nrows", help="number of rows of data to read in")
     parser.add_argument("-a", "--xcolmin", help="first column of data")
     parser.add_argument("-z", "--xcolmax", help="last column of data (file will include file[xcolmin:xcolmax]  See slice documentation for more info")
     parser.add_argument("-s", "--sep", help="data format to isolate (reg-ex)")
-    parser.add_argument("-p", "--savePath",
-                        help="name of file to save the .npy file to")
+    parser.add_argument("-p", "--savePath", default=None, help="name of file to save the .npy file to")
     kwargs = parser.parse_args()
 
     saveData(**vars(kwargs))

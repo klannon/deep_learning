@@ -4,7 +4,7 @@ import os
 source_file_name = sys.argv[1]
 print ("Loading data from %s" % source_file_name)
 x = open(source_file_name, "r")
-source_experiment = os.path.splitext(source_file_name)[0]
+source_experiment = os.path.splitext(os.path.split(source_file_name)[1])[0]
 print source_experiment
 channel_to_extract = ""
 try:
