@@ -72,8 +72,6 @@ def monitor_refiner(monitor, channels='basic'):
                     'objective',
                     'y_nll',
                     'y_misclass',
-                    'recall',
-                    'precision',
                     'total_seconds_last_epoch',
                     'training_seconds_this_epoch')
 
