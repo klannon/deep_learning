@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-#####################################################
-# Opens the data file and adds the data to the plot #
-#####################################################
+#######################
+# Opens the data file #
+#######################
 
 f = open(sys.argv[1]) # >> python graph.py "file name"
 y = []
@@ -17,14 +17,13 @@ y = []
 for line in f: # the file is assumed to contain 1 item of data per line
 	y.append(float(line))
 
-plt.plot(y) # adds the list of data read in to the plot
-
 ############################
 # Name the plot and axises #
 ############################
 
 plot_title = raw_input("Enter the plot name or press enter for " +
                        "defaults (accuracy): ")
+dataset_name = raw_input("Enter the name of the dataset the experiment was run on: ")
 plot_x_label = ""
 plot_y_label = ""
 if (plot_title == ""): # if you want to plot accuracy vs num epochs
@@ -38,6 +37,13 @@ if (plot_title == ""): # if you want to plot accuracy vs num epochs
 else: # if you want to customize the plot labels
 	plot_x_label = raw_input("Enter the x-axis label: ")
 	plot_y_label = raw_input("Enter the y-axis label: ")
+
+########################################
+# Adds the data and legend to the plot #
+########################################
+
+plt.plot(y, 'r-', label=dataset_name) # adds the list of data read in to the plot
+plt.legend(loc="best")
 
 ##############################################
 # Assigns the plot labels to the plot object #
@@ -53,5 +59,5 @@ plt.title(plot_title) # sets title on the graph
 
 source_file_name = os.path.splitext(sys.argv[1])[0] # gets file name without extension
 destination_file_name = "plot_" + source_file_name + ".png"
-plt.savefig(destination_file_name, format='png', dpi=500)
+plt.savefig(destination_file_name, format='png', dpi=1000)
 plt.show()
