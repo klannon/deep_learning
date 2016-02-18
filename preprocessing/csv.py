@@ -206,8 +206,6 @@ def saveData(pathToData,
             raise Exception("Not a valid argument for softmax")
     trainFraction = float(trainFraction) if trainFraction else 1.0
 
-    print(numLabels)
-
     data, dataROWS, dataCOLS = readFile(pathToData, *args, numLabels=numLabels, **kwargs)
 
     # This defines the last row that will be used for training data
@@ -219,8 +217,6 @@ def saveData(pathToData,
 
     if softmax is True and numLabels == 1:
         numLabels = 2
-
-    print(numLabels)
 
     # Create dictionaries of the data with keys: 'data', 'labels', and 'size'. Note that size is a function.
     trainData = {'data': data[:trCutoff, numLabels:]}

@@ -131,3 +131,16 @@ def fake_setup(self):
     self._old_setup()
     monitor_refiner(self.model.monitor)
     return None
+
+def getAccuracy(**kwargs):
+    if kwargs.get('monitor'):
+        monitor = kwargs['monitor']
+    elif kwargs.get('model'):
+        monitor = kwargs['model'].monitor
+    elif kwargs.get('train'):
+        monitor = kwargs['train'].model.monitor
+    else:
+        raise Exception('Failed to provide an instance that contains the monitor.')
+
+    return 1 - monitor.channels['test_objective']()
+
