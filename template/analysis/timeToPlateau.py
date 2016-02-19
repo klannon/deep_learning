@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, division
 
 def extractDatapoints(filename):
 
@@ -76,20 +76,29 @@ if __name__ == '__main__':
     parser = ArgumentParser(description="Find the time to the final plateau for each .log file.")
     parser.add_argument("-a", "--all", help="Show all plateaus for each file", action="store_true", default=False)
     parser.add_argument("-w", "--width", help="The number of datapoints to average across", default=10, type=int)
-    parser.add_argument("-d", "--decay", help="The slope between points that determines a plateau", default=0.0002, type=float)
     parser.add_argument("-s", "--seconds", help="Show the time to plateau in seconds", action="store_true", default=False)
+    parser.add_argument("-i", "--iterate", help="Iterate through decay values in the given range and step",
+                        type=float, default=(0.0001, 0.001, 0.0001), nargs=3, metavar=("START","STOP","STEP"))
     parser.add_argument("f", help="List of files to analyze", nargs="+")
     args = parser.parse_args()
 
+    start = args.iterate[0]
+    stop = args.iterate[1]
+    step = args.iterate[2]
+
     for f in args.f:
         t, d = extractDatapoints(f)
-        p = findPlateau(d, avg_width=args.width, decay_percent=args.decay)
-        try:
-            p = p if args.all else p[0]
-            s = totalTime(p, t) if args.seconds else convertTime(totalTime(p, t))
-            s = s if args.all else s[0]
-        except TypeError as e:
-            print(e)
-            p = None
-            s = None
-        print(p, s)
+        all_p = []
+        for i in range(1, int(((stop-start)/step)+1)):
+            decay = i*step + start
+            p = findPlateau(d, avg_width=args.width, decay_percent=decay)
+            try:
+                p = p if args.all else p[0]
+                s = totalTime(p, t) if args.seconds else convertTime(totalTime(p, t))
+                s = s if args.all else s[0]
+                all_p.append((p, s))
+            except TypeError as e:
+                p = None
+                s = None
+        med = all_p[int(round(len(all_p)/2)-1)]
+        print(med)

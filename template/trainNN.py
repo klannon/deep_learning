@@ -26,6 +26,7 @@ import pylearn2.space
 import pylearn2.termination_criteria
 
 from monitoring import TrainVeil, make_data_slim
+from transformations import transform
 
 def init_train(learningRate, train, test, batchSize, numLayers, nodesPerLayer,
                timeout=None, maxEpochs=None, benchmark=None, saveDir='.', monitorFraction=(0.02, 0.5), *args, **kwargs):
@@ -61,6 +62,8 @@ def init_train(learningRate, train, test, batchSize, numLayers, nodesPerLayer,
     dataset_train, dataset_test = PHYSICS(), PHYSICS()
     dataset_train.load_from_file(path_to_train_X, path_to_train_Y, benchmark=benchmark, which_set='train')
     dataset_test.load_from_file(path_to_test_X, path_to_test_Y, benchmark=benchmark, which_set='test')
+
+    dataset_train, dataset_test = transform(dataset_train, dataset_test)        # TESTING STANDARDIZING
 
     monitor_train, monitor_test = make_data_slim((dataset_train, dataset_test), monitorFraction)
 
@@ -113,6 +116,8 @@ def init_train(learningRate, train, test, batchSize, numLayers, nodesPerLayer,
 
     TrainVeil(train)
 
+    train.path_to_files = (path_to_train_X, path_to_train_Y, path_to_test_X, path_to_test_Y)
+
     return train
 
 
@@ -127,6 +132,7 @@ def train(mytrain, batchSize, timeout, maxEpochs, *args, **kwargs):
     # print statements after here are written to the log file
     #
     print("Opened log file")
+    print(mytrain.path_to_files)
     print("Model:")
     print(mytrain.model)
     print("\n\nAlgorithm:")
@@ -160,8 +166,10 @@ if __name__ == "__main__":
                         default=(0.02, 0.5), type=tuple)
     parser.add_argument("-m", "--benchmark", help="keyword[s] that represent the type of data", default=None)
     parser.add_argument("-s", "--saveDir", help="parent directory to save the results in", default='.')
-    parser.add_argument("train", nargs=2, metavar='train_file', help="the <train_X>.npy and <train_Y>.npy files")
-    parser.add_argument("test", nargs=2, metavar='test_file', help="the <test_X>.npy and <test_Y>.npy files")
+    parser.add_argument("train", nargs=2, metavar='train_file', help="the <train_X>.npy and <train_Y>.npy files "+
+                                                                     "relative to PYLEARN2_DATA_PATH")
+    parser.add_argument("test", nargs=2, metavar='test_file', help="the <test_X>.npy and <test_Y>.npy files "+
+                                                                   "relative to PYLEARN2_DATA_PATH")
     args = vars(parser.parse_args())
 
     # maxEpochs is specified in the call to run()
