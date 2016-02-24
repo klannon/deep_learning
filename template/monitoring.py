@@ -40,7 +40,9 @@ def make_data_slim(datasets, data_percent=0.02):
         total = X.shape[0]
 
         indices = sample(xrange(total), int(per*total))
-        rval.append(PHYSICS(X[indices], Y[indices]))
+        rval.append(PHYSICS(X[indices], Y[indices],
+                    benchmark=data.benchmark,
+                    which_set='monitor_{}'.format(data.which_set)))
 
     return rval
 
