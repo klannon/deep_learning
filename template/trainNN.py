@@ -52,7 +52,11 @@ def init_train(learningRate, training_f, testing_f, batchSize, numLayers, nodesP
 
     if not os.path.isdir(results_dir):
         os.mkdir(results_dir)
-    idpath = "{}{}_time{}".format(results_dir, hostname, time())
+
+    if kwargs.get("customName"):
+        idpath = results_dir + kwargs.get("customName")
+    else:
+        idpath = "{}{}_time{}".format(results_dir, hostname, time())
     save_path = idpath + '.pkl'
 
     benchmark_tr = benchmark if benchmark else training_f[0]
@@ -112,12 +116,15 @@ def init_train(learningRate, training_f, testing_f, batchSize, numLayers, nodesP
         # ),
         termination_criterion=terminator
     )
+
+    save_freq = kwargs.get("saveFrequency") if kwargs.get("saveFrequency") else 100
+
     # Train
     trainer = pylearn2.train.Train(dataset=dataset_train,
                                  model=model,
                                  algorithm=algorithm,
                                  save_path=save_path,
-                                 save_freq=100,
+                                 save_freq=save_freq,
                                  extensions=[ObserveWeights(),])
 
     TrainVeil(trainer)
@@ -141,7 +148,7 @@ def train(mytrain, batchSize, timeout, maxEpochs, *args, **kwargs):
     print("Files:")
     for f in mytrain.path_to_files:
         print(f)
-    print("Model:")
+    print("\nModel:")
     print(mytrain.model)
     print("\n\nAlgorithm:")
     print(mytrain.algorithm)
@@ -172,6 +179,9 @@ if __name__ == "__main__":
                         help="how long it should train in minutes", type=float, default=None)
     parser.add_argument("-mf", "--monitorFraction", help="a two-tuple with the training and testing monitoring percents",
                         default=(0.02, 0.5), type=tuple)
+    parser.add_argument("-sf", "--saveFrequency", help="how often the model should be saved and backed up",
+                        default=100, type=int)
+    parser.add_argument("-c", "--customName", help="name for the log and pkl files from your model", default=None)
     parser.add_argument("-m", "--benchmark", help="keyword[s] that represent the type of data", default=None)
     parser.add_argument("-s", "--saveDir", help="parent directory to save the results in", default='.')
     parser.add_argument("training_f", nargs=2, metavar='train_file', help="the <train_X>.npy and <train_Y>.npy files "+
