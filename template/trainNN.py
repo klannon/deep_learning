@@ -31,8 +31,28 @@ from monitoring import TrainVeil, make_data_slim
 from transformations import transform
 from exstensions import ObserveWeights
 
-def init_train(training_f, testing_f, batchSize=32, numLayers=4, nodesPerLayer=50, learningRate=0.001,
-               timeout=None, maxEpochs=None, benchmark=None, saveDir='.', monitorFraction=(0.02, 0.5), *args, **kwargs):
+def init_train(training_f, testing_f, *args, **kwargs):
+
+    defaults = dict(batchSize=32,
+                    numLayers=4,
+                    nodesPerLayer=50,
+                    learningRate=0.001,
+                    saveDir='.',
+                    monitorFraction=(0.02, 0.5))
+
+    for key, val in kwargs.items():
+        if val: defaults[key] = val
+
+    batchSize = defaults.get("batchSize")
+    numLayers = defaults.get("numLayers")
+    nodesPerLayer = defaults.get("nodesPerLayer")
+    learningRate = defaults.get("learningRate")
+    saveDir = defaults.get("saveDir")
+    monitorFraction = defaults.get("monitorFraction")
+    timeout = defaults.get("timeout")
+    maxEpochs = defaults.get("maxEpochs")
+    benchmark = defaults.get("benchmark")
+
     hostname = os.getenv("HOST", os.getpid()) # So scripts can be run simultaneously on different machines
     if saveDir == '.':
         results_dir = "{1}{0}results{0}".format(os.sep, os.getcwd())
