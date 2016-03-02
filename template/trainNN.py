@@ -24,12 +24,14 @@ import pylearn2.models.mlp as mlp
 import pylearn2.train
 import pylearn2.space
 import pylearn2.termination_criteria
+import pylearn2.utils.serial as serial
+import cPickle
 
 from monitoring import TrainVeil, make_data_slim
 from transformations import transform
 from exstensions import ObserveWeights
 
-def init_train(learningRate, training_f, testing_f, batchSize, numLayers, nodesPerLayer,
+def init_train(training_f, testing_f, batchSize=32, numLayers=4, nodesPerLayer=50, learningRate=0.001,
                timeout=None, maxEpochs=None, benchmark=None, saveDir='.', monitorFraction=(0.02, 0.5), *args, **kwargs):
     hostname = os.getenv("HOST", os.getpid()) # So scripts can be run simultaneously on different machines
     if saveDir == '.':
@@ -53,7 +55,12 @@ def init_train(learningRate, training_f, testing_f, batchSize, numLayers, nodesP
     if not os.path.isdir(results_dir):
         os.mkdir(results_dir)
 
-    if kwargs.get("customName"):
+    # If you give idpath but no custom name then the new data will be appended to the old log and overwrite the old pkl.
+    # If you give customName then that name relative to saveDir will be used to save the model.
+    # If you do not provide either of these then defaults based upon your saveDir and time are used.
+    if kwargs.get("idpath") and not kwargs.get("customName"):
+        idpath = kwargs.get("idpath")
+    elif kwargs.get("customName"):
         idpath = results_dir + kwargs.get("customName")
     else:
         idpath = "{}{}_time{}".format(results_dir, hostname, time())
@@ -78,22 +85,26 @@ def init_train(learningRate, training_f, testing_f, batchSize, numLayers, nodesP
 
     nvis = dataset_train.X.shape[1] # number of visible layers
 
-    # Model
-    network_layers = []
-    count = 1
-    while(count <= numLayers):
-        network_layers.append(mlp.RectifiedLinear(
-            layer_name=('r{}'.format(count)),
-            dim=nodesPerLayer,
-            istdev=.1))
-        count += 1
-    # add final layer
-    network_layers.append(mlp.Softmax(
-        layer_name='y',
-        n_classes=2,
-        istdev=.001))
-    model = pylearn2.models.mlp.MLP(layers=network_layers,
-                                     nvis=nvis)
+    if not kwargs.get("model"):
+        # Model
+        network_layers = []
+        count = 1
+        while(count <= numLayers):
+            network_layers.append(mlp.RectifiedLinear(
+                layer_name=('r{}'.format(count)),
+                dim=nodesPerLayer,
+                istdev=.1))
+            count += 1
+        # add final layer
+        network_layers.append(mlp.Softmax(
+            layer_name='y',
+            n_classes=2,
+            istdev=.001))
+        model = pylearn2.models.mlp.MLP(layers=network_layers,
+                                         nvis=nvis)
+    else:
+        model = kwargs.get("model")
+        del model.monitor  # If you try to use a serialized model's monitor then this code crashes.
 
     # Configure when the training will terminate
     if timeout:
@@ -131,7 +142,26 @@ def init_train(learningRate, training_f, testing_f, batchSize, numLayers, nodesP
 
     trainer.path_to_files = (path_to_train_X, path_to_train_Y, path_to_test_X, path_to_test_Y)
 
+    with open(idpath+'.cfg', 'w') as cfg:
+        cPickle.dump(dict(training_f=training_f,
+                          testing_f=testing_f,
+                          benchmark=benchmark,
+                          monitorFraction=monitorFraction,
+                          numlayers=numLayers,
+                          nodesPerLayer=nodesPerLayer,
+                          batchSize=batchSize,
+                          learningRate=learningRate,
+                          idpath=idpath), cfg, cPickle.HIGHEST_PROTOCOL)
+
     return trainer
+
+# Note that you could use a .cfg file for a different model than your .pkl if you want.
+def continue_training(path_to_cfg ,**kwargs):
+    with open(path_to_cfg) as f:
+        cfg = cPickle.load(f)
+    for key, val in kwargs.items():
+        if val: cfg[key] = val
+    return init_train(model=serial.load(cfg["idpath"]+'.pkl'), **cfg)
 
 
 def train(mytrain, batchSize, timeout, maxEpochs, *args, **kwargs):
@@ -140,7 +170,7 @@ def train(mytrain, batchSize, timeout, maxEpochs, *args, **kwargs):
     print('Using={}'.format(theano.config.device)) # Can use gpus.
     print('Writing to {}'.format(logfile))
     print('Saving to {}'.format(mytrain.save_path))
-    sys.stdout = open(logfile, 'w')
+    sys.stdout = open(logfile, 'a')
     #
     # print statements after here are written to the log file
     #
@@ -159,6 +189,8 @@ def train(mytrain, batchSize, timeout, maxEpochs, *args, **kwargs):
     # All of the other  hyperparameters can be deduced from the log file
     mytrain.main_loop()
 
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -166,27 +198,29 @@ if __name__ == "__main__":
     ## SET UP COMMAND LINE ARGUMENTS ##
     ###################################
 
-    parser.add_argument("-r", "--learningRate", help="learning rate", type=float, default=0.001)
+    parser.add_argument("-r", "--learningRate", help="learning rate", type=float, default=None)
     parser.add_argument("-b", "--batchSize", help="size of each batch "
-                        + "(subset of training set)", type=int, default=32)
+                        + "(subset of training set)", type=int, default=None)
     parser.add_argument("-l", "--numLayers",
-                        help="number of hidden layers in the network", type=int, default=4)
+                        help="number of hidden layers in the network", type=int, default=None)
     parser.add_argument("-e", "--maxEpochs",
                         help="number of epochs to run for", type=int, default=None)
     parser.add_argument("-n", "--nodesPerLayer",
-                        help="number of nodes per layer", type=int, default=50)
+                        help="number of nodes per layer", type=int, default=None)
     parser.add_argument("-t", "--timeout",
                         help="how long it should train in minutes", type=float, default=None)
     parser.add_argument("-mf", "--monitorFraction", help="a two-tuple with the training and testing monitoring percents",
-                        default=(0.02, 0.5), type=tuple)
+                        default=None, type=tuple)
     parser.add_argument("-sf", "--saveFrequency", help="how often the model should be saved and backed up",
                         default=100, type=int)
     parser.add_argument("-c", "--customName", help="name for the log and pkl files from your model", default=None)
     parser.add_argument("-m", "--benchmark", help="keyword[s] that represent the type of data", default=None)
     parser.add_argument("-s", "--saveDir", help="parent directory to save the results in", default='.')
-    parser.add_argument("training_f", nargs=2, metavar='train_file', help="the <train_X>.npy and <train_Y>.npy files "+
+    parser.add_argument("--continue", help="continue training based upon a .cfg file", default=None)
+    parser.add_argument("--idpath", help="The path to your .pkl file, but WITHOUT the extension", default=None)
+    parser.add_argument("--training_f", nargs=2, metavar='train_file', help="the <train_X>.npy and <train_Y>.npy files "+
                                                                      "relative to PYLEARN2_DATA_PATH")
-    parser.add_argument("testing_f", nargs=2, metavar='test_file', help="the <test_X>.npy and <test_Y>.npy files "+
+    parser.add_argument("--testing_f", nargs=2, metavar='test_file', help="the <test_X>.npy and <test_Y>.npy files "+
                                                                    "relative to PYLEARN2_DATA_PATH")
     args = vars(parser.parse_args())
 
@@ -203,6 +237,5 @@ if __name__ == "__main__":
     ##########################################
     ## INITIALIZE TRAINING OBJECT AND TRAIN ##
     ##########################################
-
-    mytrain = init_train(**args)
+    mytrain = continue_training(args.get("continue"), **args) if args.get("continue") else init_train(**args)
     train(mytrain, **args)
