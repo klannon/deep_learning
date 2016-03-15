@@ -15,7 +15,7 @@ import theano
 
 from physics import PHYSICS # in order for this to not give an ImportError, need to
 # set PYTHONPATH (see README.md)
-from template.terminators import Timeout
+from template.terminators import Timeout, AdjustmentWatcher, TerminatorManager
 from time import time
 
 import pylearn2
@@ -38,12 +38,14 @@ def init_train(training_f, testing_f, *args, **kwargs):
                     nodesPerLayer=50,
                     learningRate=0.001,
                     saveDir='.',
-                    monitorFraction=(0.02, 0.5))
+                    monitorFraction=(0.02, 0.5),
+                    width=5,
+                    slope=0.0001)
 
     for key, val in kwargs.items():
         if val: defaults[key] = val
 
-    batchSize = defaults.get("batchSize")
+    batchSize = int(defaults.get("batchSize"))
     numLayers = defaults.get("numLayers")
     nodesPerLayer = defaults.get("nodesPerLayer")
     learningRate = defaults.get("learningRate")
@@ -52,6 +54,8 @@ def init_train(training_f, testing_f, *args, **kwargs):
     timeout = defaults.get("timeout")
     maxEpochs = defaults.get("maxEpochs")
     benchmark = defaults.get("benchmark")
+    width = defaults.get("width")
+    slope = defaults.get("slope")
 
     hostname = os.getenv("HOST", os.getpid()) # So scripts can be run simultaneously on different machines
     if saveDir == '.':
@@ -121,18 +125,24 @@ def init_train(training_f, testing_f, *args, **kwargs):
             n_classes=2,
             istdev=.001))
         model = pylearn2.models.mlp.MLP(layers=network_layers,
-                                         nvis=nvis)
+                                        nvis=nvis)
     else:
         model = kwargs.get("model")
         del model.monitor  # If you try to use a serialized model's monitor then this code crashes.
 
     # Configure when the training will terminate
     if timeout:
-        terminator = Timeout(timeout*60)  # Timeout takes an argument in seconds, so timeout is in minutes
-    elif maxEpochs:
-        terminator = pylearn2.termination_criteria.EpochCounter(max_epochs=maxEpochs)
+        terminator_t = Timeout(timeout*60)  # Timeout takes an argument in seconds, so timeout is in minutes
     else:
-        terminator = None
+        terminator_t = None
+    if maxEpochs:
+        terminator_e = pylearn2.termination_criteria.EpochCounter(max_epochs=maxEpochs)
+    else:
+        terminator_e = None
+
+    watch = AdjustmentWatcher(width, slope)
+
+    terms = TerminatorManager(*[t for t in (terminator_e, terminator_t, watch) if t])
 
     # Algorithm
     algorithm = pylearn2.training_algorithms.sgd.SGD(
@@ -145,10 +155,20 @@ def init_train(training_f, testing_f, *args, **kwargs):
         #     decay_factor=1.0000003, # Decreases by this factor every batch. (1/(1.000001^8000)^100 
         #     min_lr=.000001
         # ),
-        termination_criterion=terminator
+        termination_criterion=terms
     )
 
     save_freq = kwargs.get("saveFrequency") if kwargs.get("saveFrequency") else 100
+
+    config = dict(training_f=training_f,
+                  testing_f=testing_f,
+                  benchmark=benchmark,
+                  monitorFraction=monitorFraction,
+                  numlayers=numLayers,
+                  nodesPerLayer=nodesPerLayer,
+                  batchSize=batchSize,
+                  learningRate=learningRate,
+                  idpath=idpath)
 
     # Train
     trainer = pylearn2.train.Train(dataset=dataset_train,
@@ -163,15 +183,9 @@ def init_train(training_f, testing_f, *args, **kwargs):
     trainer.path_to_files = (path_to_train_X, path_to_train_Y, path_to_test_X, path_to_test_Y)
 
     with open(idpath+'.cfg', 'w') as cfg:
-        cPickle.dump(dict(training_f=training_f,
-                          testing_f=testing_f,
-                          benchmark=benchmark,
-                          monitorFraction=monitorFraction,
-                          numlayers=numLayers,
-                          nodesPerLayer=nodesPerLayer,
-                          batchSize=batchSize,
-                          learningRate=learningRate,
-                          idpath=idpath), cfg, cPickle.HIGHEST_PROTOCOL)
+        cPickle.dump(config, cfg, cPickle.HIGHEST_PROTOCOL)
+
+    trainer.config = config
 
     return trainer
 
@@ -184,7 +198,7 @@ def continue_training(path_to_cfg ,**kwargs):
     return init_train(model=serial.load(cfg["idpath"]+'.pkl'), **cfg)
 
 
-def train(mytrain, batchSize, timeout, maxEpochs, *args, **kwargs):
+def train(mytrain, batchSize=None, timeout=None, maxEpochs=None, *args, **kwargs):
     # Execute training loop.
     logfile = os.path.splitext(mytrain.save_path)[0] + '.log'
     print('Using={}'.format(theano.config.device)) # Can use gpus.
@@ -208,7 +222,7 @@ def train(mytrain, batchSize, timeout, maxEpochs, *args, **kwargs):
     print("Maximum runtime: {} minutes".format(timeout))
     # All of the other  hyperparameters can be deduced from the log file
     mytrain.main_loop()
-
+    return mytrain
 
 
 if __name__ == "__main__":
@@ -234,8 +248,15 @@ if __name__ == "__main__":
     parser.add_argument("-sf", "--saveFrequency", help="how often the model should be saved and backed up",
                         default=100, type=int)
     parser.add_argument("-c", "--customName", help="name for the log and pkl files from your model", default=None)
-    parser.add_argument("-m", "--benchmark", help="keyword[s] that represent the type of data", default=None)
+    parser.add_argument("-bm", "--benchmark", help="keyword[s] that represent the type of data", default=None)
     parser.add_argument("-s", "--saveDir", help="parent directory to save the results in", default='.')
+    parser.add_argument("-w", "--width", help="the number of datapoints to average the slope over", type=int,
+                        default=None)
+    parser.add_argument("-m", "--slope", help="the slope that determines a plateau i.e. when to stop training",
+                        type=float, default=None)
+    parser.add_argument("--adjustments", help="adjustments you want to make after each training finishes. Needs to be"+
+                        "the switch full name (without --) followed by the adjustment you wish to make. You can do"+
+                        "this for however many parameters you wish.", nargs="*", default=None)
     parser.add_argument("--continue", help="continue training based upon a .cfg file", default=None)
     parser.add_argument("--idpath", help="The path to your .pkl file, but WITHOUT the extension", default=None)
     parser.add_argument("--training_f", nargs=2, metavar='train_file', help="the <train_X>.npy and <train_Y>.npy files "+
@@ -243,6 +264,15 @@ if __name__ == "__main__":
     parser.add_argument("--testing_f", nargs=2, metavar='test_file', help="the <test_X>.npy and <test_Y>.npy files "+
                                                                    "relative to PYLEARN2_DATA_PATH")
     args = vars(parser.parse_args())
+
+    # Creates the adjustments dictionary
+    temp = []
+    i = 0
+    while i < len(args["adjustments"]):
+        temp.append(args["adjustments"][i:i+2])
+        temp[-1][-1] = float(temp[-1][-1])
+        i += 2
+    args["adjustments"] = dict(temp)
 
     # maxEpochs is specified in the call to run()
     print("PARAMETERS")
@@ -258,4 +288,19 @@ if __name__ == "__main__":
     ## INITIALIZE TRAINING OBJECT AND TRAIN ##
     ##########################################
     mytrain = continue_training(args.get("continue"), **args) if args.get("continue") else init_train(**args)
-    train(mytrain, **args)
+    mytrain = train(mytrain, **args)
+    if args["width"] and args["slope"] and args["adjustments"]:
+        lr = args["adjustments"].get("learningRate")
+        b = args["adjustments"].get("batchSize")
+        args.update(mytrain.config)
+        args["batchSize"] += b
+        args["learningRate"] += lr
+        if args["maxEpochs"]:
+            args["maxEpochs"] -= mytrain.model.monitor._epochs_seen
+        while args["learningRate"] > 0 and (args["maxEpochs"] is None or args["maxEpochs"] > 0):
+            mytrain = train(init_train(model=mytrain.model, **args), **args)
+            args.update(mytrain.config)
+            args["batchSize"] += b
+            args["learningRate"] += lr
+            if args["maxEpochs"]:
+                args["maxEpochs"] -= mytrain.model.monitor._epochs_seen
