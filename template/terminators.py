@@ -41,7 +41,7 @@ class AdjustmentWatcher(TerminationCriterion):
 
     def continue_learning(self, model):
         acc = read_channel(model, "test_y_misclass")
-        self.accuracy = self.accuracy[:4]+[acc]
+        self.accuracy = self.accuracy[1:]+[acc]
         slope = sum(self.accuracy)/self.w
         if slope <= self.m:
             return False

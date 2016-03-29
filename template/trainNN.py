@@ -251,24 +251,33 @@ if __name__ == "__main__":
     parser.add_argument("-mf", "--monitorFraction", help="a two-tuple with "
                         + "the  training and testing monitoring percents",
                         default=None, type=tuple)
-    parser.add_argument("-sf", "--saveFrequency", help="how often the model should be saved and backed up",
-                        default=100, type=int)
-    parser.add_argument("-c", "--customName", help="name for the log and pkl files from your model", default=None)
-    parser.add_argument("-bm", "--benchmark", help="keyword[s] that represent the type of data", default=None)
-    parser.add_argument("-s", "--saveDir", help="parent directory to save the results in", default='.')
-    parser.add_argument("-w", "--width", help="the number of datapoints to average the slope over", type=int,
-                        default=None)
-    parser.add_argument("-m", "--slope", help="the slope that determines a plateau i.e. when to stop training",
-                        type=float, default=None)
-    parser.add_argument("--adjustments", help="adjustments you want to make after each training finishes. Needs to be"+
-                        "the switch full name (without --) followed by the adjustment you wish to make. You can do"+
-                        "this for however many parameters you wish.", nargs="*", default=None)
-    parser.add_argument("--continue", help="continue training based upon a .cfg file", default=None)
-    parser.add_argument("--idpath", help="The path to your .pkl file, but WITHOUT the extension", default=None)
-    parser.add_argument("--training_f", nargs=2, metavar='train_file', help="the <train_X>.npy and <train_Y>.npy files "+
-                                                                     "relative to PYLEARN2_DATA_PATH")
-    parser.add_argument("--testing_f", nargs=2, metavar='test_file', help="the <test_X>.npy and <test_Y>.npy files "+
-                                                                   "relative to PYLEARN2_DATA_PATH")
+    parser.add_argument("-sf", "--saveFrequency", help="how often the model "
+                        +"should be saved and backed up", default=100, type=int)
+    parser.add_argument("-c", "--customName", help="name for the log and "
+                        +"pkl files from your model", default=None)
+    parser.add_argument("-bm", "--benchmark", help="keyword[s] that "
+                        +"represent the type of data", default=None)
+    parser.add_argument("-s", "--saveDir", help="parent directory to save the"
+                        +" results in", default='.')
+    parser.add_argument("-w", "--width", help="the number of datapoints to "
+                        +"average the slope over", type=int, default=None)
+    parser.add_argument("-m", "--slope", help="the slope that determines a "
+                        +"plateau i.e. when to stop training", type=float, default=None)
+    parser.add_argument("--adjustments", help="adjustments you want to "
+                        +"make after each training finishes. Needs to be"
+                        +" the switch full name (without --) followed by"
+                        +" the adjustment you wish to make. You can do"
+                        +" this for however many parameters you wish.", nargs="*", default=None)
+    parser.add_argument("--continue", help="continue training based "
+                        +"upon a .cfg file", default=None)
+    parser.add_argument("--idpath", help="The path to your .pkl file,"
+                        +" but WITHOUT the extension", default=None)
+    parser.add_argument("--training_f", nargs=2, metavar='train_file',
+                        help="the <train_X>.npy and <train_Y>.npy files "
+                        +"relative to PYLEARN2_DATA_PATH")
+    parser.add_argument("--testing_f", nargs=2, metavar='test_file',
+                        help="the <test_X>.npy and <test_Y>.npy files "
+                        +"relative to PYLEARN2_DATA_PATH")
     args = vars(parser.parse_args())
 
     # Creates the adjustments dictionary

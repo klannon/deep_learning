@@ -1,0 +1,47 @@
+How to run a basic training that will continue until killed:
+
+python trainNN.py --training_f <path-to-training_X.npy> <path-to-training_Y.npy>
+                  --testing_f <path-to-testing_X.npy> <path-to-testing_Y.npy>
+                  -b <batch-size>                                   {Default: 32}
+                  -r <learning-rate>                                {Default: 0.001}
+                  -l <number-of-layer>                              {Default: 4}
+                  -n <nodes-per-layer>                              {Default: 50}
+                  -sf <save-frequency>                              {Default: 100}
+                  -mf (<fraction-of-data-for-training-monitoring>,
+                       <fraction-of-data-for-testing-monitoring>)   {Default: (0.02, 0.5)}
+** Note that these files are relative to PYLEARN2_DATA_PATH
+
+How to stop training after a certain number of epochs:
+
+-e <number-of-epochs>
+
+How to stop training after a certain amount of time:
+
+-t <amount-of-time-in-minutes>
+
+How to stop training at a plateau:
+
+-m <slope-of-bin-that-determines-plateau> -w <number-of-epochs-per-bin>
+
+    If you want to make an adjustment and keep training:
+        --adjustments batchSize <adjustment-to-be-added-to-batchSize>
+                      learningRate <<adjustment-to-be-added-to-learningRate>
+
+How to save the training output files with a custom name:
+
+-c <name-for-files>
+
+How to save the output files in a custom folder:
+
+-s <name-of-directory-to-save-files-in>
+** Note that this directory will be created if it does not yet exist
+
+How to continue training from a saved model:
+
+--continue <path-to-train.cfg-file>
+** Note that you can make adjustments to your model's parameters here, or
+   it will just use the parameters from last time and/or defaults.
+
+    If your train.cfg file is not with your train.pkl file then add:
+    --idpath <path-to-train.pkl-file-without-the-extension>
+
