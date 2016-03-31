@@ -28,7 +28,7 @@ import pylearn2.utils.serial as serial
 import cPickle
 
 from monitoring import TrainVeil, make_data_slim
-from transformations import transform
+from transformations import transform, group_transform
 from exstensions import ObserveWeights
 
 def init_train(training_f, testing_f, *args, **kwargs):
@@ -38,9 +38,7 @@ def init_train(training_f, testing_f, *args, **kwargs):
                     nodesPerLayer=50,
                     learningRate=0.001,
                     saveDir='.',
-                    monitorFraction=(0.02, 0.5),
-                    width=5,
-                    slope=0.0001)
+                    monitorFraction=(0.02, 0.5))
 
     for key, val in kwargs.items():
         if val: defaults[key] = val
@@ -131,16 +129,9 @@ def init_train(training_f, testing_f, *args, **kwargs):
         del model.monitor  # If you try to use a serialized model's monitor then this code crashes.
 
     # Configure when the training will terminate
-    if timeout:
-        terminator_t = Timeout(timeout*60)  # Timeout takes an argument in seconds, so timeout is in minutes
-    else:
-        terminator_t = None
-    if maxEpochs:
-        terminator_e = pylearn2.termination_criteria.EpochCounter(max_epochs=maxEpochs)
-    else:
-        terminator_e = None
-
-    watch = AdjustmentWatcher(width, slope)
+    terminator_t = Timeout(timeout*60) if timeout else None  # Timeout takes an argument in seconds, so timeout is in minutes
+    terminator_e = pylearn2.termination_criteria.EpochCounter(max_epochs=maxEpochs) if maxEpochs else None
+    watch = AdjustmentWatcher(width, slope) if width and slope else None
 
     terms = TerminatorManager(*[t for t in (terminator_e, terminator_t, watch) if t])
 
@@ -283,10 +274,11 @@ if __name__ == "__main__":
     # Creates the adjustments dictionary
     temp = []
     i = 0
-    while i < len(args["adjustments"]):
-        temp.append(args["adjustments"][i:i+2])
-        temp[-1][-1] = float(temp[-1][-1])
-        i += 2
+    if args["adjustments"]:
+        while i < len(args["adjustments"]):
+            temp.append(args["adjustments"][i:i+2])
+            temp[-1][-1] = float(temp[-1][-1])
+            i += 2
     args["adjustments"] = dict(temp)
 
     # maxEpochs is specified in the call to run()
