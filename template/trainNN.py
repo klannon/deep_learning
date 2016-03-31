@@ -290,7 +290,7 @@ if __name__ == "__main__":
     args["adjustments"] = dict(temp)
 
     # maxEpochs is specified in the call to run()
-    print("PARAMETERS")
+    print("PARAMETERS GIVEN")
     print("Learning Rate: {}".format(args['learningRate']))
     print("Batch Size: {}".format(args['batchSize']))
     print("Number of Layers: {}".format(args['numLayers']))
@@ -308,14 +308,14 @@ if __name__ == "__main__":
         lr = args["adjustments"].get("learningRate")
         b = args["adjustments"].get("batchSize")
         args.update(mytrain.config)
-        args["batchSize"] += b
-        args["learningRate"] += lr
+        args["batchSize"] += b if b else 0
+        args["learningRate"] += lr if lr else 0
         if args["maxEpochs"]:
             args["maxEpochs"] -= mytrain.model.monitor._epochs_seen
         while args["learningRate"] > 0 and (args["maxEpochs"] is None or args["maxEpochs"] > 0):
             mytrain = train(init_train(model=mytrain.model, **args), **args)
             args.update(mytrain.config)
-            args["batchSize"] += b
-            args["learningRate"] += lr
+            args["batchSize"] += b if b else 0
+            args["learningRate"] += lr if lr else 0
             if args["maxEpochs"]:
                 args["maxEpochs"] -= mytrain.model.monitor._epochs_seen
