@@ -28,7 +28,7 @@ import pylearn2.utils.serial as serial
 import cPickle
 
 from monitoring import TrainVeil, make_data_slim
-from transformations import transform, group_transform
+from transformations import transform
 from exstensions import ObserveWeights
 
 def init_train(training_f, testing_f, *args, **kwargs):
