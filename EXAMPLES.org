@@ -9,6 +9,7 @@ python trainNN.py --training_f <path-to-training_X.npy> <path-to-training_Y.npy>
                   -sf <save-frequency>                              {Default: 100}
                   -mf (<fraction-of-data-for-training-monitoring>,
                        <fraction-of-data-for-testing-monitoring>)   {Default: (0.02, 0.5)}
+                  -wd <num-of-std-dev-for-weights>                  {Default: 0.1}
 ** Note that these files are relative to PYLEARN2_DATA_PATH
 
 How to stop training after a certain number of epochs:

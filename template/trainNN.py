@@ -38,7 +38,8 @@ def init_train(training_f, testing_f, *args, **kwargs):
                     nodesPerLayer=50,
                     learningRate=0.001,
                     saveDir='.',
-                    monitorFraction=(0.02, 0.5))
+                    monitorFraction=(0.02, 0.5),
+                    numWeightDev=0.1)
 
     for key, val in kwargs.items():
         if val: defaults[key] = val
@@ -54,6 +55,7 @@ def init_train(training_f, testing_f, *args, **kwargs):
     benchmark = defaults.get("benchmark")
     width = defaults.get("width")
     slope = defaults.get("slope")
+    sigma_w = defaults.get("numWeightDev")
 
     hostname = os.getenv("HOST", os.getpid()) # So scripts can be run simultaneously on different machines
     if saveDir == '.':
@@ -115,7 +117,7 @@ def init_train(training_f, testing_f, *args, **kwargs):
             network_layers.append(mlp.RectifiedLinear(
                 layer_name=('r{}'.format(count)),
                 dim=nodesPerLayer,
-                istdev=.1))
+                istdev=sigma_w))
             count += 1
         # add final layer
         network_layers.append(mlp.Softmax(
@@ -242,6 +244,8 @@ if __name__ == "__main__":
     parser.add_argument("-mf", "--monitorFraction", help="a two-tuple with "
                         + "the  training and testing monitoring percents",
                         default=None, type=tuple)
+    parser.add_argument("-wd", "--numWeightDev", help="number of std deviations"
+                        +" to distribute the weights over", type=float, default=None)
     parser.add_argument("-sf", "--saveFrequency", help="how often the model "
                         +"should be saved and backed up", default=100, type=int)
     parser.add_argument("-c", "--customName", help="name for the log and "
