@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message Experiment{
+	int32 batch_size = 1;
+	float learning_rate = 2;
+	string start_data_time = 3; // from Python's time.asctime()
+	string end_data_time = 4; //   ^ ^
+
+//	repeated Layer structure = 5;
+//	repeated Epoch results = 6;
+
+//	enum Data
+}
