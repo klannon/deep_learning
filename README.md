@@ -11,7 +11,7 @@ Installing:
             <li><a href="http://keras.io/">Keras</a>: <code>pip install keras</code></li>
             <li><a href="https://developers.google.com/protocol-buffers/">Google Protocol Buffers</a>: <code>pip install protobuf==3.0.0b2</code></li>
         </ul>
-        Note: If you want to visualize the results of the networks you train, you can 
+        Note: If you want to visualize the results of the networks you train, you can run the script "run_dashboard.py" in /dashboard (waiting to commit it)
     </li>
     <li>Get the stuff we <em>did</em> write
         <ul>
