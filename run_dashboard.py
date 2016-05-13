@@ -15,8 +15,10 @@ def dataset_page(dataset_name):
 
 def file_page(dataset_name, file_name):
     graph_test = graph.make_test_plot()
+    file_graph_html = graph.make_plots_from_single_file(dataset_name,
+                                                        file_name)
     return render_template("file.html", file_name = file_name,
-                           dataset_name = dataset_name, graph = graph_test)
+                           dataset_name = dataset_name, graph_html = file_graph_html)
 
 
 #######################

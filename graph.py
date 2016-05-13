@@ -1,9 +1,12 @@
+import os
+
+from protobuf.loader import load_experiment
+from protobuf.experiment_pb2 import Experiment
+
 import plotly
+from plotly import tools
 import plotly.graph_objs as go
 from plotly.tools import FigureFactory as FF
-
-# import plotly
-# from plotly.graph_objs import Scatter, Layout
 
 # f = open("train_y_misclass_pylearn_512.log", "r")
 
@@ -27,6 +30,45 @@ from plotly.tools import FigureFactory as FF
 #     }, output_type="div", show_link=False)
 
 # # print text
+
+
+def make_plots_from_single_file(dataset_name, file_name):
+    # get the directory this script is in
+    parent_directory = os.path.dirname(os.path.realpath(__file__))
+    
+    # create path to where file_name is located and load the file
+    file_path = os.path.join(parent_directory, "data", dataset_name,
+                             file_name)
+    exp = load_experiment(file_path)
+
+    accuracies = map(lambda a: a.train_accuracy, exp.results[:])
+    total_times = [0]
+    times = map(lambda a: a.num_seconds, exp.results[:])
+    for i in range(len(times)):
+        total_time = total_times[len(total_times)-1] + times[i]
+        total_times.append(total_time)
+
+    trace1 = go.Scatter(x=range(len(accuracies)), y=accuracies)
+
+    trace2 = go.Scatter(x=total_times, y=accuracies)
+
+    titles = ('Train Accuracy vs Epochs','Train Accuracy vs Time')
+    fig = tools.make_subplots(rows=2,cols=1,subplot_titles=titles)
+
+    fig.append_trace(trace1, 1, 1)
+    fig.append_trace(trace2, 2, 1)
+    # All of the axes properties here: https://plot.ly/python/reference/#XAxis
+    fig['layout']['xaxis1'].update(title='Epochs')
+    fig['layout']['xaxis2'].update(title='Time (seconds)')
+
+    # All of the axes properties here: https://plot.ly/python/reference/#YAxis
+    fig['layout']['yaxis1'].update(title='Train Accuracy')
+    fig['layout']['yaxis2'].update(title='Train Accuracy')
+
+    fig['layout'].update(height=900)
+
+    text = plotly.offline.plot(fig, output_type="div", show_link=False)
+    return text
 
 
 def make_test_plot():
