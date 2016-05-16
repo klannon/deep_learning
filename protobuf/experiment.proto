@@ -31,9 +31,9 @@ message Experiment {
 	      Adam adam = 11;
 	      Adamax adamax = 12;
 	}
-
 	enum Dataset {
 	     OSU_TTBAR = 0;
 	     OSU_TTHIGGS = 1;
 	}
+	string description = 13;
 }
