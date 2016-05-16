@@ -18,7 +18,7 @@ Installing:
     <li>Get the stuff we <em>did</em> write
         <ul>
             <li><code>git clone https://github.com/klannon/deep-learning.git deep_learning</code></li>
-            <li>It is VERY IMPORTANT that you clone the repository into the folder "deep_learning" instead of "deep-learning" because python can not import modules from </li>
+            <li>It is VERY IMPORTANT that you clone the repository into the folder "deep_learning" instead of "deep-learning" because python can not import modules from directories that contain a "-" without some headaches</li>
         </ul>
     </li>
     <li>Set the <code>PYTHONPATH</code> environment variable to the PARENT directory of the directory that you cloned this repository into (whatever directory containes the folder "deep_learning" by default) so python can resolve our imports correctly.
