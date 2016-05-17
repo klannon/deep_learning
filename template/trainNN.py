@@ -18,18 +18,9 @@ from physics import PHYSICS # in order for this to not give an ImportError, need
 from template.terminators import Timeout, AdjustmentWatcher, TerminatorManager
 from time import time
 
-import pylearn2
-import pylearn2.training_algorithms.sgd
-import pylearn2.models.mlp as mlp
-import pylearn2.train
-import pylearn2.space
-import pylearn2.termination_criteria
-import pylearn2.utils.serial as serial
 import cPickle
 
-from monitoring import TrainVeil, make_data_slim
 from transformations import transform, group_transform
-from exstensions import ObserveWeights
 
 def init_train(training_f, testing_f, *args, **kwargs):
 
@@ -106,7 +97,7 @@ def init_train(training_f, testing_f, *args, **kwargs):
     monitor_train, monitor_test = make_data_slim((dataset_train, dataset_test), monitorFraction)
 
     nvis = dataset_train.X.shape[1] # number of visible layers
-
+    print(nvis)
     if not kwargs.get("model"):
         # Model
         network_layers = []
