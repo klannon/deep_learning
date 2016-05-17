@@ -1,0 +1,39 @@
+syntax = "proto3";
+import "optimizers.proto";
+
+message Layer {
+	enum Type {
+	     DENSE = 0;
+	}
+	int32 input_dimension = 1;
+	int32 output_dimension = 2;
+}
+
+message Epoch {
+	float num_seconds = 1;
+	float loss = 2;
+	float train_accuracy = 3;
+}
+
+message Experiment {
+	int32 batch_size = 1;
+	float learning_rate = 2;
+	string start_date_time = 3; // from Python's time.asctime()
+	string end_date_time = 4; //   ^ ^
+
+	repeated Layer structure = 5;
+	repeated Epoch results = 6;
+	oneof optimizer {
+	      SGD sgd = 7;
+	      RMSprop rmsprop = 8;
+	      Adagrad adagrad = 9;
+	      Adadelta adadelta = 10;
+	      Adam adam = 11;
+	      Adamax adamax = 12;
+	}
+	enum Dataset {
+	     OSU_TTBAR = 0;
+	     OSU_TTHIGGS = 1;
+	}
+	string description = 13;
+}
