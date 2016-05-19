@@ -2,7 +2,7 @@ from flask import Flask, render_template, url_for, abort
 app = Flask(__name__)
 
 import utils
-import graph
+import deep_learning.dashboard.graph as graph
 
 
 ######################

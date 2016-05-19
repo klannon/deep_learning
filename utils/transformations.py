@@ -1,17 +1,16 @@
-from sklearn import preprocessing as pp
+from sklearn.preprocessing import StandardScaler
 from numpy import concatenate
 
-__author__ = 'Matthew Drnevich'
 
 def standardize(datasets):   return map(pp.scale, datasets)
 
-def get_transform(dataset):   return pp.StandardScaler().fit(dataset)
+def get_transform(dataset):   return StandardScaler().fit(dataset)
 
 def transform(train_set, test_set):
-
-    scale = pp.StandardScaler().fit(train_set)
-    print scale
+    scale = StandardScaler().fit(train_set)
     train_set, test_set = scale.transform(train_set), scale.transform(test_set)
+    # print train_set.mean(axis=0)
+    # print train_set.std(axis=0)
     return train_set, test_set
 
 # This was being tested but determined to be detrimental. Recommended not to use, at least for the time being

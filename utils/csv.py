@@ -5,8 +5,6 @@ import re
 import os.path
 import argparse
 
-__author__ = 'Matthew Drnevich'
-
 
 # Used the input method from previous physics.py
 def readFile(pathToData, *args, **kwargs):

@@ -3,3 +3,4 @@ experiments
 *.npy
 *.npz
 *.pyc
+*.txt

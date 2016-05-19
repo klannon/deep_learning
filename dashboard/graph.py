@@ -1,7 +1,7 @@
 import os
 
-from protobuf.loader import load_experiment
-from protobuf.experiment_pb2 import Experiment
+from deep_learning.protobuf.loader import load_experiment
+from deep_learning.protobuf.experiment_pb2 import Experiment
 
 import plotly
 from plotly import tools
@@ -37,7 +37,7 @@ def make_plots_from_single_file(dataset_name, file_name):
     parent_directory = os.path.dirname(os.path.realpath(__file__))
     
     # create path to where file_name is located and load the file
-    file_path = os.path.join(parent_directory, "data", dataset_name,
+    file_path = os.path.join(parent_directory, "../data", dataset_name,
                              file_name)
     exp = load_experiment(file_path)
 

@@ -1,0 +1,14 @@
+{
+    "PtEtaPhi": {
+        "train_file": "train_all_ptEtaPhi_ttbar_wjet.txt",
+        "test_file": "test_all_ptEtaPhi_ttbar_wjet.txt"
+    },
+    "Pt": {
+        "train_file": "train_all_Pt_ttbar_wjet.txt",
+        "test_file": "test_all_Pt_ttbar_wjet.txt"
+    },
+    "3v": {
+        "train_file": "train_all_3v_ttbar_wjet.txt",
+        "test_file": "test_all_3v_ttbar_wjet.txt"
+    }
+}
