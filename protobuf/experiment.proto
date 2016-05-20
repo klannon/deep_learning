@@ -16,22 +16,28 @@ message Epoch {
 }
 
 message Experiment {
-	string start_date_time = 1; // from str(datetime.datetime.now())
-	string end_date_time = 2; //   in python
+        reserved 1, 2; // for fields that were in earlier versions of the
+        //            specification that were later removed.  Ensures
+        //            backwards compatibility
+        reserved "batch_size", "learning_rate";
 
-	repeated Layer structure = 3;
-	repeated Epoch results = 4;
+
+        string start_date_time = 3; // from str(datetime.datetime.now())
+	string end_date_time = 4; //   in python
+
+	repeated Layer structure = 5;
+	repeated Epoch results = 6;
 	oneof optimizer {
-	      SGD sgd = 5;
-	      RMSprop rmsprop = 6;
-	      Adagrad adagrad = 7;
-	      Adadelta adadelta = 8;
-	      Adam adam = 9;
-	      Adamax adamax = 10;
+	      SGD sgd = 7;
+	      RMSprop rmsprop = 8;
+	      Adagrad adagrad = 9;
+	      Adadelta adadelta = 10;
+	      Adam adam = 11;
+	      Adamax adamax = 12;
 	}
 	enum Dataset {
 	     OSU_TTBAR = 0;
 	     OSU_TTHIGGS = 1;
 	}
-	string description = 11;
+	string description = 13;
 }

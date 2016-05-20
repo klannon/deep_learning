@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='experiment.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"M\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\"\x11\n\x04Type\x12\t\n\x05\x44\x45NSE\x10\x00\"B\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x02\x12\x0c\n\x04loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\"\xdd\x02\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x01 \x01(\t\x12\x15\n\rend_date_time\x18\x02 \x01(\t\x12\x19\n\tstructure\x18\x03 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x04 \x03(\x0b\x32\x06.Epoch\x12\x13\n\x03sgd\x18\x05 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\x06 \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\x07 \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\x08 \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\t \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\n \x01(\x0b\x32\x07.AdamaxH\x00\x12\x13\n\x0b\x64\x65scription\x18\x0b \x01(\t\")\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\x0f\n\x0bOSU_TTHIGGS\x10\x01\x42\x0b\n\toptimizerb\x06proto3')
+  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"M\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\"\x11\n\x04Type\x12\t\n\x05\x44\x45NSE\x10\x00\"B\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x02\x12\x0c\n\x04loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\"\x84\x03\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x13\n\x03sgd\x18\x07 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\x08 \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\t \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\n \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0b \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\x0c \x01(\x0b\x32\x07.AdamaxH\x00\x12\x13\n\x0b\x64\x65scription\x18\r \x01(\t\")\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\x0f\n\x0bOSU_TTHIGGS\x10\x01\x42\x0b\n\toptimizerJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03R\nbatch_sizeR\rlearning_rateb\x06proto3')
   ,
   dependencies=[optimizers__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -161,77 +161,77 @@ _EXPERIMENT = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='start_date_time', full_name='Experiment.start_date_time', index=0,
-      number=1, type=9, cpp_type=9, label=1,
+      number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
       name='end_date_time', full_name='Experiment.end_date_time', index=1,
-      number=2, type=9, cpp_type=9, label=1,
+      number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
       name='structure', full_name='Experiment.structure', index=2,
-      number=3, type=11, cpp_type=10, label=3,
+      number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
       name='results', full_name='Experiment.results', index=3,
-      number=4, type=11, cpp_type=10, label=3,
+      number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
       name='sgd', full_name='Experiment.sgd', index=4,
-      number=5, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='rmsprop', full_name='Experiment.rmsprop', index=5,
-      number=6, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='adagrad', full_name='Experiment.adagrad', index=6,
       number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='adadelta', full_name='Experiment.adadelta', index=7,
+      name='rmsprop', full_name='Experiment.rmsprop', index=5,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='adam', full_name='Experiment.adam', index=8,
+      name='adagrad', full_name='Experiment.adagrad', index=6,
       number=9, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='adamax', full_name='Experiment.adamax', index=9,
+      name='adadelta', full_name='Experiment.adadelta', index=7,
       number=10, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
+      name='adam', full_name='Experiment.adam', index=8,
+      number=11, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='adamax', full_name='Experiment.adamax', index=9,
+      number=12, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
       name='description', full_name='Experiment.description', index=10,
-      number=11, type=9, cpp_type=9, label=1,
+      number=13, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -253,7 +253,7 @@ _EXPERIMENT = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=186,
-  serialized_end=535,
+  serialized_end=574,
 )
 
 _LAYER_TYPE.containing_type = _LAYER

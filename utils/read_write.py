@@ -1,215 +1,103 @@
 """
 This module contains functions for loading data from and writing data
 to .npz files
-
-
 """
 import argparse
 import json
 import math
 import os
+import shutil
 import sys
 import unittest
 
 import numpy as np
 
-from deep_learning.utils.transformations import transform
+import deep_learning.utils.transformations as tr
+import deep_learning.utils.dataset as ds
 
-##############
-# Unit Tests #
-##############
 
-class LoaderTestCase(unittest.TestCase):
-    def test_get_available_datasets(self):
-        """ Test the get_available_datasets function
-        Because the datasets in the folder will change over time, this
-        test only prints out the results of get_available_datasets().
-        The onus is on the user to check that all the datasets in
-        deep_learning/data are contained in the list printed by this
-        test
-        """
-        print get_available_datasets()
 
-    def test_verify_dataset(self):
-        self.assertEqual(verify_dataset("OSU_TTBAR"), None)
-        with self.assertRaises(IOError):
-            verify_dataset("there's no way this one exists")
+################
+## Unit Tests ##
+################
+
+class ReadWriteTestCase(unittest.TestCase):
+    def setUp(self):
+        # make a test dataset
+        # print os.getcwd()
+        data_dir_path = ds.get_data_dir_path()
+        # print os.getcwd()
+        os.chdir(r"%s" % data_dir_path)
+        try:
+            os.mkdir("TEST")
+        except OSError:
+            shutil.rmtree("TEST")
+            os.mkdir("TEST")
             
+        os.chdir("TEST")
+
+        # make some files in the test dataset
+        f = open("TEST.json", "w")
+        f.write("{\"PtEtaPhi\":{\"train_file\":\"train_all_ptEtaPhi"
+                ".txt\",\"test_file\":\"test_all_ptEtaPhi.txt\"},\""
+                "Pt\":{\"train_file\":\"train_all_Pt.txt\",\"test_f"
+                "ile\":\"test_all_Pt.txt\"},\"3v\":{\"train_file\":"
+                "\"train_all_3v.txt\",\"test_file\":\"test_all_3v.t"
+                "xt\"}}")
+        f.close()
+        os.system("touch train_all_ptEtaPhi.txt")
+        os.system("touch test_all_ptEtaPhi.txt")
+        os.system("touch train_all_Pt.txt")
+        os.system("touch test_all_Pt.txt")
+        os.system("touch train_all_3v.txt")
+        os.system("touch test_all_3v.txt")
+
+        os.system("touch PtEtaPhi.npz")
+        
+        os.chdir(data_dir_path)     
+
+    
     def test_load_dataset(self):
+        """ Tests the load_data function """
+
+        # if the dataset doesn't exist
         with self.assertRaises(IOError):
             load_dataset("this one definitely doesn't exist either",
                          "")
 
     def test_read_config_file(self):
+        """ Tests the read_config_file function """
         # nominal case
-        read_config_file("OSU_TTBAR", "PtEtaPhi")
+        train, test = read_config_file("TEST", "PtEtaPhi")
+        test_dataset_path = ds.get_path_to_dataset("TEST")
+        self.assertEqual(train, os.path.join(test_dataset_path,
+                                             "train_all_ptEtaPhi.txt"))
+        self.assertEqual(test, os.path.join(test_dataset_path,
+                                            "test_all_ptEtaPhi.txt"))
         
-        # if the dataset doesn't exist
+        # if the dataset doesn't exist but the coordinate system does
         with self.assertRaises(IOError):
-            read_config_file("no way does this exist", "PtEtaPhi")
+            read_config_file("no way does this dataset exist",
+                             "PtEtaPhi")
 
-        # if the coordinate system doesn't exist in the given file
+        # if the coordinate system doesn't exist in a valid dataset
         with self.assertRaises(KeyError):
-            read_config_file("OSU_TTBAR", "does not exist")
+            read_config_file("TEST", "Spherical")
 
-    def test_write_data_to_archive(self):
-        write_data_to_archive("OSU_TTBAR", "PtEtaPhi")
-
-####################
-# Module functions #
-####################
-
-def get_available_datasets():
-    """ Gets a list of the directories in deep_learning/data
-    Each one of these directories is assumed to represent a dataset,
-    containing a .npz file with training and testing data
-
-    Returns
-    -------
-    datasets : list of the folders in deep_learning/data/
-    """
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    
-    # Go up one directory and into the "data" directory
-    data_dir = os.path.join(current_dir, "..", "data")
-    data_dir_contents = os.listdir(data_dir)
-    
-    # filter out any files that might be in deep_learning/data/
-    # beacuse a dataset is assumed to be any folder in this directory
-    datasets = []
-    for item in data_dir_contents:
-        item_path = os.path.join(data_dir, item)
-        if os.path.isdir(item_path):
-            datasets.append(item)
-
-    return datasets
-
-def verify_dataset(dataset_name):
-    """ checks if dataset_name exists. Raises an IOError if it doesn't
-
-    Parameters
-    ----------
-    dataset_name : name of the dataset to check
-
-    Raises
-    ------
-    IOError : if the dataset dataset_name doesn't exist
-
-    Returns
-    -------
-    None : if the dataset dataset_name does exist
-    """
-    if dataset_name not in get_available_datasets():
-        raise IOError("The dataset \"%s\" does not exist.  You can "
-                      "create it by visiting deep_learning/data and "
-                      "creating the directory \"%s\" there." %
-                      (dataset_name, dataset_name))
-
-def get_path_to_dataset(dataset_name, coordinate_system=None):
-    """ returns the absolute location of the directory dataset_name
-    If the dataset (folder) does not exist, raises an IOError, and if
-    coordinate_system.npz does not exist in the directory, an IOError
-    is also raised.  If no coordinate system is specified, returns the
-    path to the dataset.  If a coordinate system is specified, returns
-    the path to the coordinate system within the dataset
-
-    Parameters
-    ----------
-    dataset_name : dataset to find the path to
-    If the dataset name is not valid, an IOError will be raised
-
-    coordinate_system : (default None) If a coordinate system is
-    specified, get_path_to_dataset will return the path to the .npz
-    file for this coordinate system.  A NameError will be raised if the
-    requested coordinate system does not exist.
-
-    Returns
-    -------
-    if coordinate_system != None : the path to the coordinate system's
-    .npz file
-
-    else : the path to the dataset
-    
-    """
-    # check if the dataset exists
-    verify_dataset(dataset_name)
-    
-    # because this file is in the utils directory
-    util_dir = os.path.dirname(os.path.realpath(__file__))
-    
-    # Go up one directory, into the "data" directory, and into the
-    # directory dataset_name
-    data_dir = os.path.join(util_dir, "..", "data")
-    dataset_dir = os.path.join(data_dir, dataset_name)
-
-    # if no coordinate system is specified, return the path to the
-    # dataset directory
-    if coordinate_system == None:
-        return dataset_dir
-    # figure out whether the files for a given coordinate system exist
-    else:
-        dataset_path = os.path.join(dataset_dir,
-                                    (coordinate_system + ".npz"))
-
-    if not os.path.isfile(dataset_path):
-        raise IOError("The file \"%s\" does not exist" %
-                      dataset_path)
-    
-    else: # if a file exists for the specified coordinate system
-        return dataset_path
-
-def load_file(dataset_name, ):
-    # reads data 
-    dataset_path = get_path_to_dataset(dataset_name)
+    def tearDown(self):
+        data_dir_path = ds.get_data_dir_path()
+        shutil.rmtree("TEST")
 
 
-    ##########################
-
-
-    ##### TODO: CHANGE THIS AND GET_PATH_TO_DATASET SO IT READS BINARY .NPZ FILES ##########################
-
-
-    ##########################
-
-
-    
-    x_train = train[:,1:]
-    y_train = train[:, 0]
-
-    # makes a one hot encoding of y_train
-    y_max = math.ceil(np.amax(y_train))
-    y_min = math.floor(np.amin(y_train))
-    num_classes = (y_max - y_min) + 1
-    y_train_one_hot = np.zeros((y_train.shape[0], num_classes))
-    for i in range(y_train.shape[0]):
-        class_index = y_train[i] - y_min # where in the sequence of
-        # classes (from y_min to y_max) y_train[i] is
-        y_train_one_hot[i, class_index] = 1
-
-    return(x_train, y_train_one_hot)
-
-# def load_dataset(dataset_name, coordinate_system):
-#     x_test = test[:,1:]
-#     print x_test[0:2]
-#     y_test_raw = test[:, 0]
-#     y_test_list = []
-#     # [ 1.  2.]
-#     for row in y_test_raw:
-#         if row == 1:
-#             y_test_list.append([0., 1.])
-            
-#         if row == 2:
-#             y_test_list.append([1., 0.])
-#             y_test = np.array(y_test_list)
-            
-#     print y_test[0:2]
-
-#     return(x_test, y_test)
+######################
+## Module functions ##
+######################
 
 def load_dataset(dataset_name, coordinate_system):
-    dataset_path = get_path_to_dataset(dataset_name, coordinate_system)
+    dataset_path = ds.get_path_to_dataset(dataset_name, coordinate_system)
     data = np.load(dataset_path)
     return(data['x_train'], data['y_train'], data['x_test'], data['y_test'])
+
 
 def read_config_file(dataset_name, coordinate_system):
     """ Reads a json file containing the locations of train/test data
@@ -232,7 +120,7 @@ def read_config_file(dataset_name, coordinate_system):
 
     test_path : path to the testing file listed in the json file
     """
-    dataset_path = get_path_to_dataset(dataset_name)
+    dataset_path = ds.get_path_to_dataset(dataset_name)
     json_path = os.path.join(dataset_path, ("%s.json" % dataset_name))
     json_file = open(json_path, "r")
 
@@ -247,6 +135,7 @@ def read_config_file(dataset_name, coordinate_system):
     test_path = os.path.join(dataset_path, test_file_name)
     
     return (train_path, test_path)
+
 
 def make_one_hot(labels):
     """ makes a one hot encoding of labels 
@@ -269,6 +158,7 @@ def make_one_hot(labels):
         labels_one_hot[i, class_index] = 1
 
     return labels_one_hot
+
 
 def write_data_to_archive(dataset_name, coordinate_system):
     """ converts a series of text files into a single .npz archive
@@ -311,16 +201,20 @@ def write_data_to_archive(dataset_name, coordinate_system):
     del test_raw
     
     # transform all rows, excluding the labels
-    (x_train, x_test) = transform(x_train, x_test)
-    output_path = os.path.join(get_path_to_dataset(dataset_name),("%s.npz" % coordinate_system))
+    (x_train, x_test) = tr.transform(x_train, x_test)
+    output_path = os.path.join(ds.get_path_to_dataset(dataset_name),("%s.npz" % coordinate_system))
     np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
 
+
+
+
+    
 if __name__ == "__main__":
     # uncomment the next 2 lines to run the tests
-    # suite = unittest.TestLoader().loadTestsFromTestCase(LoaderTestCase)
-    # unittest.TextTestRunner(verbosity=2).run(suite)
-    if len(sys.argv) != 3:
-        print "Usage: python read_write.py DATASET COORDINATE_SYSTEM"
-        exit(1)
+    suite = unittest.TestLoader().loadTestsFromTestCase(ReadWriteTestCase)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+    # if len(sys.argv) != 3:
+    #     print "Usage: python read_write.py DATASET COORDINATE_SYSTEM"
+    #     exit(1)
 
-    write_data_to_archive(sys.argv[1], sys.argv[2])
+    # write_data_to_archive(sys.argv[1], sys.argv[2])
