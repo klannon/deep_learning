@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='experiment.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"M\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\"\x11\n\x04Type\x12\t\n\x05\x44\x45NSE\x10\x00\"B\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x02\x12\x0c\n\x04loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\"\x84\x03\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x13\n\x03sgd\x18\x07 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\x08 \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\t \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\n \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0b \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\x0c \x01(\x0b\x32\x07.AdamaxH\x00\x12\x13\n\x0b\x64\x65scription\x18\r \x01(\t\")\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\x0f\n\x0bOSU_TTHIGGS\x10\x01\x42\x0b\n\toptimizerJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03R\nbatch_sizeR\rlearning_rateb\x06proto3')
+  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"M\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\"\x11\n\x04Type\x12\t\n\x05\x44\x45NSE\x10\x00\"B\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x02\x12\x0c\n\x04loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\"\xc5\x03\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x13\n\x03sgd\x18\x07 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\x08 \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\t \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\n \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0b \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\x0c \x01(\x0b\x32\x07.AdamaxH\x00\x12\x13\n\x0b\x64\x65scription\x18\r \x01(\t\x12\x19\n\x11\x63oordinate_system\x18\x0e \x01(\t\x12$\n\x07\x64\x61taset\x18\x0f \x01(\x0e\x32\x13.Experiment.Dataset\")\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\x0f\n\x0bOSU_TTHIGGS\x10\x01\x42\x0b\n\toptimizerJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03R\nbatch_sizeR\rlearning_rateb\x06proto3')
   ,
   dependencies=[optimizers__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -62,8 +62,8 @@ _EXPERIMENT_DATASET = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=481,
-  serialized_end=522,
+  serialized_start=546,
+  serialized_end=587,
 )
 _sym_db.RegisterEnumDescriptor(_EXPERIMENT_DATASET)
 
@@ -236,6 +236,20 @@ _EXPERIMENT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='coordinate_system', full_name='Experiment.coordinate_system', index=11,
+      number=14, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='dataset', full_name='Experiment.dataset', index=12,
+      number=15, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -253,7 +267,7 @@ _EXPERIMENT = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=186,
-  serialized_end=574,
+  serialized_end=639,
 )
 
 _LAYER_TYPE.containing_type = _LAYER
@@ -265,6 +279,7 @@ _EXPERIMENT.fields_by_name['adagrad'].message_type = optimizers__pb2._ADAGRAD
 _EXPERIMENT.fields_by_name['adadelta'].message_type = optimizers__pb2._ADADELTA
 _EXPERIMENT.fields_by_name['adam'].message_type = optimizers__pb2._ADAM
 _EXPERIMENT.fields_by_name['adamax'].message_type = optimizers__pb2._ADAMAX
+_EXPERIMENT.fields_by_name['dataset'].enum_type = _EXPERIMENT_DATASET
 _EXPERIMENT_DATASET.containing_type = _EXPERIMENT
 _EXPERIMENT.oneofs_by_name['optimizer'].fields.append(
   _EXPERIMENT.fields_by_name['sgd'])

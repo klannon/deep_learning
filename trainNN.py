@@ -9,22 +9,22 @@ from keras.layers import Activation, Dense, Dropout, Input
 from keras.models import Sequential
 from keras.optimizers import SGD
 
-from deep_learning.protobuf.experiment_pb2 import Epoch, Experiment, Layer
+import deep_learning.protobuf.experiment_pb2 as pb
 import deep_learning.utils.read_write as rw
-
-##
-# Constants
-##
-DATASET = "OSU_TTBAR"
-COORDINATE_SYSTEM = "PtEtaPhi"
-
+import deep_learning.utils.dataset as ds
 
 ##
 # Experiment log set-up
 ##
-exp = Experiment() # container for all info about this experiment
+exp = pb.Experiment() # container for all info about this experiment
 exp.start_date_time = str(datetime.datetime.now())
-save_dir = rw.get_path_to_dataset(DATASET)
+save_dir = ds.get_path_to_dataset(pb.Experiment.Dataset.Name(exp.Dataset))
+
+##
+# Constants
+##
+exp.dataset = pb.Experiment.Dataset.Value("OSU_TTBAR")
+exp.coordinate_system = "PtEtaPhi"
 
 # file naming scheme so simultaneous experiments can be run
 output_file_name = ("%s_%s" % (os.getenv("HOST", os.getpid()), time.time()))
@@ -40,7 +40,7 @@ sys.stdout = open(log_file_path, 'w')
 # Load data from .npz archive created by invoking
 # deep_learning/utils/read_write.py
 ##
-x_train, y_train, x_test, y_test = rw.load_dataset(DATASET, COORDINATE_SYSTEM)
+x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.Dataset),exp.coordinate_system)
 print("loaded data")
 
 
@@ -50,6 +50,10 @@ print("loaded data")
 ##
 model = Sequential()
 
+layer = exp.structure.add()
+layer.Type = "DENSE"
+layer.input_dimension = 15
+layer.output_dimension = 50
 model.add(Dense(50, input_dim=15))
 model.add(Activation("relu"))
 
@@ -67,7 +71,11 @@ model.add(Activation("softmax"))
 
 print("added all the layers")
 
-model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.1), metrics=['accuracy'])
+
+opt = exp.optimizer
+opt = pb.SGD()
+opt.lr=0.1
+model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=opt.lr), metrics=['accuracy'])
 
 print("compiled the model")
 

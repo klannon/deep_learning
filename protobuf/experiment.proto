@@ -40,4 +40,6 @@ message Experiment {
 	     OSU_TTHIGGS = 1;
 	}
 	string description = 13;
+        string coordinate_system = 14;
+        Dataset dataset = 15;
 }
