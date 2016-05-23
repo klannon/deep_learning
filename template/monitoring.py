@@ -144,5 +144,5 @@ def getAccuracy(**kwargs):
     else:
         raise Exception('Failed to provide an instance that contains the monitor.')
 
-    return 1 - monitor.channels['test_objective']()
+    return 1 - monitor.channels['test_y_misclass']()
 
