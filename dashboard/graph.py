@@ -2,6 +2,7 @@ import os
 
 from deep_learning.protobuf.loader import load_experiment
 from deep_learning.protobuf.experiment_pb2 import Experiment
+import deep_learning.utils.dataset as ds_utils
 
 import plotly
 from plotly import tools
@@ -33,11 +34,8 @@ from plotly.tools import FigureFactory as FF
 
 
 def make_plots_from_single_file(dataset_name, file_name):
-    # get the directory this script is in
-    parent_directory = os.path.dirname(os.path.realpath(__file__))
-    
-    # create path to where file_name is located and load the file
-    file_path = os.path.join(parent_directory, "../data", dataset_name,
+    data_path = ds_utils.get_data_dir_path()
+    file_path = os.path.join(data_path, dataset_name,
                              file_name)
     exp = load_experiment(file_path)
 
