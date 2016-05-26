@@ -1,5 +1,6 @@
 from sklearn.preprocessing import StandardScaler
-from numpy import concatenate
+import sklearn.preprocessing as pp
+import numpy as np
 
 
 def standardize(datasets):   return map(pp.scale, datasets)
@@ -9,41 +10,25 @@ def get_transform(dataset):   return StandardScaler().fit(dataset)
 def transform(train_set, test_set):
     scale = StandardScaler().fit(train_set)
     train_set, test_set = scale.transform(train_set), scale.transform(test_set)
-    # print train_set.mean(axis=0)
-    # print train_set.std(axis=0)
     return train_set, test_set
 
-# This was being tested but determined to be detrimental. Recommended not to use, at least for the time being
-def group_transform(train_set, test_set):
-    pt = concatenate([train_set.X[:, i*3:i*3+1] for i in xrange(5)], axis=1)
-    etaPhi = concatenate([train_set.X[:, i*3:i*3+2] for i in xrange(5)], axis=1)
-    test_pt = concatenate([test_set.X[:, i*3:i*3+1] for i in xrange(5)], axis=1)
-    test_etaPhi = concatenate([test_set.X[:, i*3:i*3+2] for i in xrange(5)], axis=1)
+def shuffle_in_unison(a, b):
+    """ Shuffle two numpy arrays (data and labels) simultaneously.
+    Code curtosy of (http://stackoverflow.com/questions/4601373/
+    better-way-to-shuffle-two-numpy-arrays-in-unison).
 
-    pt_scale = get_transform(pt.reshape((pt.size, 1)))
-    etaPhi_scale = get_transform(etaPhi.reshape((etaPhi.size, 1)))
+    Parameters
+    ----------
+    a : numpy array
+    b : (another) numpy array
 
-    pt = pt_scale.transform(pt)
-    etaPhi = etaPhi_scale.transform(etaPhi)
-    test_pt = pt_scale.transform(test_pt)
-    test_etaPhi = etaPhi_scale.transform(test_etaPhi)
-
-    for i in xrange(15):
-        pI = 0
-        eI = 0
-        if i == 0:
-            train_set_X = pt[:, 0:1]
-            test_set_X = test_pt[:, 0:1]
-            pI += 1
-        elif i > 0 and i % 3 == 0:
-            train_set_X = concatenate((train_set_X, pt[:, pI:pI+1]), axis=1)
-            test_set_X = concatenate((test_set_X, test_pt[:, pI:pI+1]), axis=1)
-            pI += 1
-        else:
-            train_set_X = concatenate((train_set_X, etaPhi[:, eI:eI+1]), axis=1)
-            test_set_X = concatenate((test_set_X, test_etaPhi[:, eI:eI+1]), axis=1)
-            eI += 1
-
-    train_set.X = train_set_X
-    test_set.X = test_set_X
-    return train_set, test_set
+    Returns
+    -------
+    a : shuffled version of a
+    b: shuffled (the same way as a) version of b
+    """
+    rng_state = np.random.get_state()
+    np.random.shuffle(a)
+    np.random.set_state(rng_state)
+    np.random.shuffle(b)
+    return (a, b)

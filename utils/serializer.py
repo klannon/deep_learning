@@ -14,10 +14,9 @@ containing the information about the results of your training.
 This script does not currently support all of the parameters that a
 fully-described .experiment file should contain.  Support is
 forthcoming.
-Support for log files formatted by pylearn2 is also forthcoming
 """
 
-import os, sys, unittest
+import os, unittest
 
 from deep_learning.protobuf.experiment_pb2 import *
 
@@ -188,7 +187,6 @@ if __name__ == "__main__":
     # suite = unittest.TestLoader().loadTestsFromTestCase(SerializerTestCase)
     # unittest.TextTestRunner(verbosity=2).run(suite)
 
-    
     # check that the right number of arguments were provided
     if len(sys.argv) != 2:
         print ("ERROR -- Usage:" + sys.argv[0] + " LOG_FILE_NAME")

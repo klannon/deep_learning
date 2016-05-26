@@ -1,46 +1,40 @@
 from __future__ import print_function
 
-import datetime
-import os
-import sys
-import time
+import datetime, os, sys, time
 
 from keras.layers import Activation, Dense, Dropout, Input
 from keras.models import Sequential
 from keras.optimizers import SGD
 
-import deep_learning.protobuf.experiment_pb2 as pb
-import deep_learning.utils.read_write as rw
+import deep_learning.protobuf as pb
 import deep_learning.utils.dataset as ds
+from deep_learning.utils import Angler
 
 ##
 # Experiment log set-up
 ##
 exp = pb.Experiment() # container for all info about this experiment
 exp.start_date_time = str(datetime.datetime.now())
-save_dir = ds.get_path_to_dataset(pb.Experiment.Dataset.Name(exp.Dataset))
+
 
 ##
 # Constants
 ##
 exp.dataset = pb.Experiment.Dataset.Value("OSU_TTBAR")
-exp.coordinate_system = "PtEtaPhi"
+exp.coordinates = "PtEtaPhi"
+save_dir = ds.get_path_to_dataset(pb.Experiment.Dataset.Name(exp.dataset))
 
 # file naming scheme so simultaneous experiments can be run
-output_file_name = ("%s_%s" % (os.getenv("HOST", os.getpid()), time.time()))
+output_file_name = ("%s_%s" % (str(os.getenv("HOST", os.getpid())).split('.')[0], time.time()))
 experiment_file_name = os.path.join(save_dir, ("%s.experiment" % output_file_name))
 
-##
-# Log file set-up (temporary, future will save all info to exp)
-##
-log_file_path = os.path.join(save_dir, ("%s.log" % output_file_name))
-sys.stdout = open(log_file_path, 'w')
+sys.stdout = Angler(exp)
 
 ##
 # Load data from .npz archive created by invoking
-# deep_learning/utils/read_write.py
+# deep_learning/utils/archive.py
 ##
-x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.Dataset),exp.coordinate_system)
+x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
 print("loaded data")
 
 
@@ -51,30 +45,35 @@ print("loaded data")
 model = Sequential()
 
 layer = exp.structure.add()
-layer.Type = "DENSE"
+layer.type = 0
 layer.input_dimension = 15
 layer.output_dimension = 50
+
 model.add(Dense(50, input_dim=15))
 model.add(Activation("relu"))
 
-model.add(Dense(50))
-model.add(Activation("relu"))
+for i in xrange(3):
+    layer = exp.structure.add()
+    layer.type = 0
+    layer.input_dimension = 50
+    layer.output_dimension = 50
+    model.add(Dense(50))
+    model.add(Activation("relu"))
 
-model.add(Dense(50))
-model.add(Activation("relu"))
-
-model.add(Dense(50))
-model.add(Activation("relu"))
-
+layer = exp.structure.add()
+layer.type = 1
+layer.input_dimension = 50
+layer.output_dimension = 2
 model.add(Dense(output_dim=2))
 model.add(Activation("softmax"))
 
 print("added all the layers")
 
 
-opt = exp.optimizer
 opt = pb.SGD()
-opt.lr=0.1
+opt.lr = 0.1
+exp.sgd.MergeFrom(opt)
+
 model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=opt.lr), metrics=['accuracy'])
 
 print("compiled the model")
@@ -90,10 +89,12 @@ print("compiled the model")
 # ceil b/c train_length % batch_size isn't necessarily equal to 0
 # num_batches = math.ceil(train_length / batch_size)
 
+exp.batch_size = 64
 
 model.fit(x_train, y_train,
-          nb_epoch=1,
+          nb_epoch=50,
           batch_size=64,
+          validation_split=0.02,
           verbose=2)
 
 print("trained the model")
@@ -110,6 +111,7 @@ exp.end_date_time = str(datetime.datetime.now())
 # TODO: write to file every 5-10 epochs (when writing the model
 # to a .json file) in case job gets killed
 ##
+
 experiment_file = open(experiment_file_name, "wb")
 experiment_file.write(exp.SerializeToString())
 experiment_file.close()

@@ -1,6 +1,0 @@
-env
-experiments
-*.npy
-*.npz
-*.pyc
-*.txt

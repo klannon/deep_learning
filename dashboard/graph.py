@@ -1,7 +1,7 @@
 import os
 
-from deep_learning.protobuf.loader import load_experiment
-from deep_learning.protobuf.experiment_pb2 import Experiment
+from deep_learning.protobuf import load_experiment
+from deep_learning.protobuf import Experiment
 import deep_learning.utils.dataset as ds_utils
 
 import plotly
