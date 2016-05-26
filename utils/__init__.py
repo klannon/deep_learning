@@ -48,6 +48,6 @@ class Angler(object):
 
 
 """
-Create UID (Unique Identifier Code) for naming log + experiment files, much like permisisons.
+Create UID (Unique Identifier Code) for naming log + experiment files, much like permissions.
 Utilize hexadecimal labeling with
 """

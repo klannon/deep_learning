@@ -9,6 +9,8 @@ from keras.optimizers import SGD
 import deep_learning.protobuf as pb
 import deep_learning.utils.dataset as ds
 from deep_learning.utils import Angler
+from math import ceil
+from time import clock
 
 ##
 # Experiment log set-up
@@ -28,7 +30,7 @@ save_dir = ds.get_path_to_dataset(pb.Experiment.Dataset.Name(exp.dataset))
 output_file_name = ("%s_%s" % (str(os.getenv("HOST", os.getpid())).split('.')[0], time.time()))
 experiment_file_name = os.path.join(save_dir, ("%s.experiment" % output_file_name))
 
-sys.stdout = Angler(exp)
+#sys.stdout = Angler(exp)
 
 ##
 # Load data from .npz archive created by invoking
@@ -83,27 +85,38 @@ print("compiled the model")
 # training. Experimenting with moving whole dataset to gpu at once
 ##
 
-# train_length = x_train.shape[0]
+num_epochs = 20
+batch_size = 64
+train_length = x_train.shape[0]
+num_batches = int(ceil(train_length/batch_size))
+
 # indices = np.arrange(train_length)
 
 # ceil b/c train_length % batch_size isn't necessarily equal to 0
 # num_batches = math.ceil(train_length / batch_size)
 
-exp.batch_size = 64
+exp.batch_size = batch_size
 
-model.fit(x_train, y_train,
-          nb_epoch=50,
-          batch_size=64,
-          validation_split=0.02,
-          verbose=2)
+clock()
+
+for i in xrange(num_epochs):
+    t = clock()
+    for b in xrange(num_batches):
+        model.train_on_batch(x_train[b*batch_size:b*batch_size+batch_size, :], y_train[b*batch_size:b*batch_size+batch_size, :])
+    print(i, model.evaluate(x_test, y_test, batch_size=64, verbose=0))
+    print(clock()-t)
+
+
 
 print("trained the model")
 
 print(model.evaluate(x_test, y_test, batch_size=64, verbose=0))
 
 print("evaluated the model")
+print("Total Time: {}".format(clock()))
 
 exp.end_date_time = str(datetime.datetime.now())
+exp.total_time = clock()
 
 
 ##
