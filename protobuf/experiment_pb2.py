@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='experiment.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"M\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\"\x11\n\x04Type\x12\t\n\x05\x44\x45NSE\x10\x00\"B\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x02\x12\x0c\n\x04loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\"\x88\x03\n\nExperiment\x12\x12\n\nbatch_size\x18\x01 \x01(\x05\x12\x15\n\rlearning_rate\x18\x02 \x01(\x02\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x13\n\x03sgd\x18\x07 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\x08 \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\t \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\n \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0b \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\x0c \x01(\x0b\x32\x07.AdamaxH\x00\x12\x13\n\x0b\x64\x65scription\x18\r \x01(\t\")\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\x0f\n\x0bOSU_TTHIGGS\x10\x01\x42\x0b\n\toptimizerb\x06proto3')
+  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"t\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\x12\x19\n\x04type\x18\x03 \x01(\x0e\x32\x0b.Layer.Type\"\x1d\n\x04Type\x12\x08\n\x04RELU\x10\x00\x12\x0b\n\x07SOFTMAX\x10\x01\"r\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x05\x12\x12\n\ntrain_loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\x12\x11\n\ttest_loss\x18\x04 \x01(\x02\x12\x15\n\rtest_accuracy\x18\x05 \x01(\x02\"\xdc\x03\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x12\n\nbatch_size\x18\x07 \x01(\x05\x12\x13\n\x03sgd\x18\x08 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\t \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\n \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\x0b \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0c \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\r \x01(\x0b\x32\x07.AdamaxH\x00\x12$\n\x07\x64\x61taset\x18\x0e \x01(\x0e\x32\x13.Experiment.Dataset\x12\x13\n\x0b\x63oordinates\x18\x0f \x01(\t\x12\x12\n\ntotal_time\x18\x10 \x01(\x02\x12\x13\n\x0b\x64\x65scription\x18\x11 \x01(\t\")\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\x0f\n\x0bOSU_TTHIGGS\x10\x01\x42\x0c\n\noptimizersJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03R\rlearning_rateb\x06proto3')
   ,
   dependencies=[optimizers__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -34,14 +34,18 @@ _LAYER_TYPE = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='DENSE', index=0, number=0,
+      name='RELU', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='SOFTMAX', index=1, number=1,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=98,
-  serialized_end=115,
+  serialized_start=125,
+  serialized_end=154,
 )
 _sym_db.RegisterEnumDescriptor(_LAYER_TYPE)
 
@@ -62,8 +66,8 @@ _EXPERIMENT_DATASET = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=524,
-  serialized_end=565,
+  serialized_start=667,
+  serialized_end=708,
 )
 _sym_db.RegisterEnumDescriptor(_EXPERIMENT_DATASET)
 
@@ -89,6 +93,13 @@ _LAYER = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='type', full_name='Layer.type', index=2,
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -103,7 +114,7 @@ _LAYER = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=38,
-  serialized_end=115,
+  serialized_end=154,
 )
 
 
@@ -116,22 +127,36 @@ _EPOCH = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='num_seconds', full_name='Epoch.num_seconds', index=0,
-      number=1, type=2, cpp_type=6, label=1,
+      number=1, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='loss', full_name='Epoch.loss', index=1,
+      name='train_loss', full_name='Epoch.train_loss', index=1,
       number=2, type=2, cpp_type=6, label=1,
-      has_default_value=False, default_value=0,
+      has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
       name='train_accuracy', full_name='Epoch.train_accuracy', index=2,
       number=3, type=2, cpp_type=6, label=1,
-      has_default_value=False, default_value=0,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='test_loss', full_name='Epoch.test_loss', index=3,
+      number=4, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='test_accuracy', full_name='Epoch.test_accuracy', index=4,
+      number=5, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -147,8 +172,8 @@ _EPOCH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=117,
-  serialized_end=183,
+  serialized_start=156,
+  serialized_end=270,
 )
 
 
@@ -160,92 +185,106 @@ _EXPERIMENT = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='batch_size', full_name='Experiment.batch_size', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='learning_rate', full_name='Experiment.learning_rate', index=1,
-      number=2, type=2, cpp_type=6, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='start_date_time', full_name='Experiment.start_date_time', index=2,
+      name='start_date_time', full_name='Experiment.start_date_time', index=0,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='end_date_time', full_name='Experiment.end_date_time', index=3,
+      name='end_date_time', full_name='Experiment.end_date_time', index=1,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='structure', full_name='Experiment.structure', index=4,
+      name='structure', full_name='Experiment.structure', index=2,
       number=5, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='results', full_name='Experiment.results', index=5,
+      name='results', full_name='Experiment.results', index=3,
       number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='sgd', full_name='Experiment.sgd', index=6,
-      number=7, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='batch_size', full_name='Experiment.batch_size', index=4,
+      number=7, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='rmsprop', full_name='Experiment.rmsprop', index=7,
+      name='sgd', full_name='Experiment.sgd', index=5,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='adagrad', full_name='Experiment.adagrad', index=8,
+      name='rmsprop', full_name='Experiment.rmsprop', index=6,
       number=9, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='adadelta', full_name='Experiment.adadelta', index=9,
+      name='adagrad', full_name='Experiment.adagrad', index=7,
       number=10, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='adam', full_name='Experiment.adam', index=10,
+      name='adadelta', full_name='Experiment.adadelta', index=8,
       number=11, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='adamax', full_name='Experiment.adamax', index=11,
+      name='adam', full_name='Experiment.adam', index=9,
       number=12, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='description', full_name='Experiment.description', index=12,
-      number=13, type=9, cpp_type=9, label=1,
+      name='adamax', full_name='Experiment.adamax', index=10,
+      number=13, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='dataset', full_name='Experiment.dataset', index=11,
+      number=14, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='coordinates', full_name='Experiment.coordinates', index=12,
+      number=15, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='total_time', full_name='Experiment.total_time', index=13,
+      number=16, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='description', full_name='Experiment.description', index=14,
+      number=17, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -263,13 +302,14 @@ _EXPERIMENT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='optimizer', full_name='Experiment.optimizer',
+      name='optimizers', full_name='Experiment.optimizers',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=186,
-  serialized_end=578,
+  serialized_start=273,
+  serialized_end=749,
 )
 
+_LAYER.fields_by_name['type'].enum_type = _LAYER_TYPE
 _LAYER_TYPE.containing_type = _LAYER
 _EXPERIMENT.fields_by_name['structure'].message_type = _LAYER
 _EXPERIMENT.fields_by_name['results'].message_type = _EPOCH
@@ -279,25 +319,26 @@ _EXPERIMENT.fields_by_name['adagrad'].message_type = optimizers__pb2._ADAGRAD
 _EXPERIMENT.fields_by_name['adadelta'].message_type = optimizers__pb2._ADADELTA
 _EXPERIMENT.fields_by_name['adam'].message_type = optimizers__pb2._ADAM
 _EXPERIMENT.fields_by_name['adamax'].message_type = optimizers__pb2._ADAMAX
+_EXPERIMENT.fields_by_name['dataset'].enum_type = _EXPERIMENT_DATASET
 _EXPERIMENT_DATASET.containing_type = _EXPERIMENT
-_EXPERIMENT.oneofs_by_name['optimizer'].fields.append(
+_EXPERIMENT.oneofs_by_name['optimizers'].fields.append(
   _EXPERIMENT.fields_by_name['sgd'])
-_EXPERIMENT.fields_by_name['sgd'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizer']
-_EXPERIMENT.oneofs_by_name['optimizer'].fields.append(
+_EXPERIMENT.fields_by_name['sgd'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizers']
+_EXPERIMENT.oneofs_by_name['optimizers'].fields.append(
   _EXPERIMENT.fields_by_name['rmsprop'])
-_EXPERIMENT.fields_by_name['rmsprop'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizer']
-_EXPERIMENT.oneofs_by_name['optimizer'].fields.append(
+_EXPERIMENT.fields_by_name['rmsprop'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizers']
+_EXPERIMENT.oneofs_by_name['optimizers'].fields.append(
   _EXPERIMENT.fields_by_name['adagrad'])
-_EXPERIMENT.fields_by_name['adagrad'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizer']
-_EXPERIMENT.oneofs_by_name['optimizer'].fields.append(
+_EXPERIMENT.fields_by_name['adagrad'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizers']
+_EXPERIMENT.oneofs_by_name['optimizers'].fields.append(
   _EXPERIMENT.fields_by_name['adadelta'])
-_EXPERIMENT.fields_by_name['adadelta'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizer']
-_EXPERIMENT.oneofs_by_name['optimizer'].fields.append(
+_EXPERIMENT.fields_by_name['adadelta'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizers']
+_EXPERIMENT.oneofs_by_name['optimizers'].fields.append(
   _EXPERIMENT.fields_by_name['adam'])
-_EXPERIMENT.fields_by_name['adam'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizer']
-_EXPERIMENT.oneofs_by_name['optimizer'].fields.append(
+_EXPERIMENT.fields_by_name['adam'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizers']
+_EXPERIMENT.oneofs_by_name['optimizers'].fields.append(
   _EXPERIMENT.fields_by_name['adamax'])
-_EXPERIMENT.fields_by_name['adamax'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizer']
+_EXPERIMENT.fields_by_name['adamax'].containing_oneof = _EXPERIMENT.oneofs_by_name['optimizers']
 DESCRIPTOR.message_types_by_name['Layer'] = _LAYER
 DESCRIPTOR.message_types_by_name['Epoch'] = _EPOCH
 DESCRIPTOR.message_types_by_name['Experiment'] = _EXPERIMENT

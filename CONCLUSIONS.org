@@ -1,4 +1,0 @@
-Standardization is significantly beneficial.
-(large vs small batches)
-(deep vs shallow networks)
-(large vs small layer depth)

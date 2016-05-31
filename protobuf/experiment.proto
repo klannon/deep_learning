@@ -3,37 +3,51 @@ import "optimizers.proto";
 
 message Layer {
 	enum Type {
-	     DENSE = 0;
+	     RELU = 0;
+         SOFTMAX = 1;
 	}
 	int32 input_dimension = 1;
 	int32 output_dimension = 2;
+    Type type = 3;
 }
 
 message Epoch {
-	float num_seconds = 1;
-	float loss = 2;
+	int32 num_seconds = 1;
+	float train_loss = 2;
 	float train_accuracy = 3;
+    float test_loss = 4;
+    float test_accuracy = 5;
 }
 
 message Experiment {
-	int32 batch_size = 1;
-	float learning_rate = 2;
-	string start_date_time = 3; // from Python's time.asctime()
-	string end_date_time = 4; //   ^ ^
+        reserved 1, 2; // for fields that were in earlier versions of the
+        //            specification that were later removed.  Ensures
+        //            backwards compatibility
+        reserved "learning_rate";
 
-	repeated Layer structure = 5;
-	repeated Epoch results = 6;
-	oneof optimizer {
-	      SGD sgd = 7;
-	      RMSprop rmsprop = 8;
-	      Adagrad adagrad = 9;
-	      Adadelta adadelta = 10;
-	      Adam adam = 11;
-	      Adamax adamax = 12;
-	}
-	enum Dataset {
-	     OSU_TTBAR = 0;
-	     OSU_TTHIGGS = 1;
-	}
-	string description = 13;
+
+        string start_date_time = 3; // from str(datetime.datetime.now())
+        string end_date_time = 4; //   in python
+
+        repeated Layer structure = 5;
+        repeated Epoch results = 6;
+
+        int32 batch_size = 7;
+
+        oneof optimizers {
+            SGD sgd = 8;
+            RMSprop rmsprop = 9;
+            Adagrad adagrad = 10;
+            Adadelta adadelta = 11;
+            Adam adam = 12;
+            Adamax adamax = 13;
+        };
+        enum Dataset {
+	        OSU_TTBAR = 0;
+	        OSU_TTHIGGS = 1;
+        };
+        Dataset dataset = 14;
+        string coordinates = 15;
+        float total_time = 16;
+        string description = 17;
 }
