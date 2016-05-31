@@ -1,3 +1,6 @@
+from __future__ import division, print_function
+from os import fstat
+
 
 def which(myDict):
     rval = ""
@@ -6,48 +9,25 @@ def which(myDict):
             rval += k + ', '
     return rval.rstrip(', ') if rval.rstrip(', ') else None
 
-def kParse(string):
-    """
-    Parse the output from Keras into the numerical values only.
+def progress(batch, total, batch_size, eta, end=''):
+    bars = batch*100//total//4
+    rval = "\t {}/{} [".format(batch*batch_size, total*batch_size)+">"*bars+"."*(25-bars)+"]"
+    rval += " ETA: {:.2f}s".format(eta)
+    if fstat(0) == fstat(1):
+        print("\r"+rval, end=end)
+    else:
+        if batch == total:
+            print(rval)
 
-    Parameters
-    ----------
-    string
-
-    Returns
-    -------
-    List of numbers output by Keras (time, loss, acc, val_loss, val_acc)
-    """
-    nums = filter(lambda x: x.isdigit() or x[:-1].isdigit() or len(filter(lambda y: y.isdigit(), x.split('.')))==2,
-           string.split())
-    if len(nums) >= 3:
-        nums[0] = int(nums[0][:-1])
-        nums[1:] = [float(x) for x in nums[1:]]
-    return nums
-
-class Angler(object):
-    """
-    Catches the output from Keras and writes it to an Experiment instance.
-    """
-    def __init__(self, exp):
-        self.experiment = exp
-
-    def write(self, string):
-        nums = kParse(string)
-        if len(nums) == 3:
-            a = self.experiment.results.add()
-            a.num_seconds, a.train_loss, a.train_accuracy = nums
-        elif len(nums) == 5:
-            a = self.experiment.results.add()
-            a.num_seconds, a.train_loss, a.train_accuracy, a.val_loss, a.val_accuracy = nums
-        else:
-            pass
-
-    def close(self):
-        pass
-
-
-"""
-Create UID (Unique Identifier Code) for naming log + experiment files, much like permissions.
-Utilize hexadecimal labeling with
-"""
+def convert_seconds(s):
+    m, s = divmod(s, 60)
+    h, m = divmod(m, 60)
+    d, h = divmod(h, 24)
+    d, h, m, s = [int(t) for t in [d, h, m, s]]
+    u = ['d', 'h', 'm', 's']
+    rval = ''
+    for i,t in enumerate([d, h, m, s]):
+        if t == 0 and u[i] != 's':
+            continue
+        rval += "{}{} ".format(t, u[i])
+    return rval.rstrip()

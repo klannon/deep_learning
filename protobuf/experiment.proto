@@ -15,8 +15,8 @@ message Epoch {
 	int32 num_seconds = 1;
 	float train_loss = 2;
 	float train_accuracy = 3;
-    float val_loss = 4;
-    float val_accuracy = 5;
+    float test_loss = 4;
+    float test_accuracy = 5;
 }
 
 message Experiment {
@@ -48,6 +48,6 @@ message Experiment {
         };
         Dataset dataset = 14;
         string coordinates = 15;
-        int32 total_time = 16;
+        float total_time = 16;
         string description = 17;
 }

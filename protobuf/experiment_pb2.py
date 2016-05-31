@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='experiment.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"t\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\x12\x19\n\x04type\x18\x03 \x01(\x0e\x32\x0b.Layer.Type\"\x1d\n\x04Type\x12\x08\n\x04RELU\x10\x00\x12\x0b\n\x07SOFTMAX\x10\x01\"p\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x05\x12\x12\n\ntrain_loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\x12\x10\n\x08val_loss\x18\x04 \x01(\x02\x12\x14\n\x0cval_accuracy\x18\x05 \x01(\x02\"\xdc\x03\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x12\n\nbatch_size\x18\x07 \x01(\x05\x12\x13\n\x03sgd\x18\x08 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\t \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\n \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\x0b \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0c \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\r \x01(\x0b\x32\x07.AdamaxH\x00\x12$\n\x07\x64\x61taset\x18\x0e \x01(\x0e\x32\x13.Experiment.Dataset\x12\x13\n\x0b\x63oordinates\x18\x0f \x01(\t\x12\x12\n\ntotal_time\x18\x10 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x11 \x01(\t\")\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\x0f\n\x0bOSU_TTHIGGS\x10\x01\x42\x0c\n\noptimizersJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03R\rlearning_rateb\x06proto3')
+  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"t\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\x12\x19\n\x04type\x18\x03 \x01(\x0e\x32\x0b.Layer.Type\"\x1d\n\x04Type\x12\x08\n\x04RELU\x10\x00\x12\x0b\n\x07SOFTMAX\x10\x01\"r\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x05\x12\x12\n\ntrain_loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\x12\x11\n\ttest_loss\x18\x04 \x01(\x02\x12\x15\n\rtest_accuracy\x18\x05 \x01(\x02\"\xdc\x03\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x12\n\nbatch_size\x18\x07 \x01(\x05\x12\x13\n\x03sgd\x18\x08 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\t \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\n \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\x0b \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0c \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\r \x01(\x0b\x32\x07.AdamaxH\x00\x12$\n\x07\x64\x61taset\x18\x0e \x01(\x0e\x32\x13.Experiment.Dataset\x12\x13\n\x0b\x63oordinates\x18\x0f \x01(\t\x12\x12\n\ntotal_time\x18\x10 \x01(\x02\x12\x13\n\x0b\x64\x65scription\x18\x11 \x01(\t\")\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\x0f\n\x0bOSU_TTHIGGS\x10\x01\x42\x0c\n\noptimizersJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03R\rlearning_rateb\x06proto3')
   ,
   dependencies=[optimizers__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -66,8 +66,8 @@ _EXPERIMENT_DATASET = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=665,
-  serialized_end=706,
+  serialized_start=667,
+  serialized_end=708,
 )
 _sym_db.RegisterEnumDescriptor(_EXPERIMENT_DATASET)
 
@@ -147,14 +147,14 @@ _EPOCH = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='val_loss', full_name='Epoch.val_loss', index=3,
+      name='test_loss', full_name='Epoch.test_loss', index=3,
       number=4, type=2, cpp_type=6, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='val_accuracy', full_name='Epoch.val_accuracy', index=4,
+      name='test_accuracy', full_name='Epoch.test_accuracy', index=4,
       number=5, type=2, cpp_type=6, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
@@ -173,7 +173,7 @@ _EPOCH = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=156,
-  serialized_end=268,
+  serialized_end=270,
 )
 
 
@@ -277,8 +277,8 @@ _EXPERIMENT = _descriptor.Descriptor(
       options=None),
     _descriptor.FieldDescriptor(
       name='total_time', full_name='Experiment.total_time', index=13,
-      number=16, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
+      number=16, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -305,8 +305,8 @@ _EXPERIMENT = _descriptor.Descriptor(
       name='optimizers', full_name='Experiment.optimizers',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=271,
-  serialized_end=747,
+  serialized_start=273,
+  serialized_end=749,
 )
 
 _LAYER.fields_by_name['type'].enum_type = _LAYER_TYPE
