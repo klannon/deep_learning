@@ -274,4 +274,18 @@ RUN UNTIL IT REACHES A CERTAIN ACCURACY?
 MONITORING FRACTION?
 
 DIFFERENT NODES PER LAYER
+
+COULD DO A LITTLE MORE WORK ON PREPROCESSING
+
+SHUFFLE THE DATA WHEN IT'S LOADED?
+
+PREPROCESSING STEPS:
+---> Update .json file
+---> Organize the files into one file or train + test files
+---> Call utils.archive.create_archive with the appropriate arguments
+---> Should be good to go!
+
+FOR COLIN:
+    WORK ON DASHBOARD
+    TRY TENSORFLOW
 """

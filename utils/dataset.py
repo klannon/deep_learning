@@ -64,27 +64,27 @@ def verify_dataset(dataset_name):
     return None # python does automatically, but makes code pretty
 
 
-def get_path_to_dataset(dataset_name, coordinate_system=None):
+def get_path_to_dataset(dataset_name, format=None):
     """ returns the absolute location of the directory dataset_name
     If the dataset (folder) does not exist, raises an IOError, and if
-    coordinate_system.npz does not exist in the directory, an IOError
-    is also raised.  If no coordinate system is specified, returns the
-    path to the dataset.  If a coordinate system is specified, returns
-    the path to the coordinate system within the dataset
+    format.npz does not exist in the directory, an IOError
+    is also raised.  If no format is specified, returns the
+    path to the dataset.  If a format is specified, returns
+    the path to the format within the dataset
 
     Parameters
     ----------
     dataset_name : dataset to find the path to
     If the dataset name is not valid, an IOError will be raised
 
-    coordinate_system : (default None) If a coordinate system is
+    format : (default None) If a format is
     specified, get_path_to_dataset will return the path to the .npz
-    file for this coordinate system.  A NameError will be raised if the
-    requested coordinate system does not exist.
+    file for this format.  A NameError will be raised if the
+    requested format does not exist.
 
     Returns
     -------
-    if coordinate_system != None : the path to the coordinate system's
+    if format != None : the path to the format's
     .npz file
 
     else : the path to the dataset
@@ -97,20 +97,20 @@ def get_path_to_dataset(dataset_name, coordinate_system=None):
     data_dir = get_data_dir_path()
     dataset_dir = os.path.join(data_dir, dataset_name)
 
-    # if no coordinate system is specified, return the path to the
+    # if no format is specified, return the path to the
     # dataset directory
-    if coordinate_system == None:
+    if format == None:
         return dataset_dir
-    # figure out whether the files for a given coordinate system exist
+    # figure out whether the files for a given format exist
     else:
         dataset_path = os.path.join(dataset_dir,
-                                    (coordinate_system + ".npz"))
+                                    (format + ".npz"))
 
     if not os.path.isfile(dataset_path):
         raise IOError('The file "%s" does not exist' %
                       dataset_path)
     
-    else: # if a file exists for the specified coordinate system
+    else: # if a file exists for the specified format
         return dataset_path
     
 
@@ -139,8 +139,8 @@ def get_experiments_from_dataset(dataset_name):
 
     return experiment_names
 
-def load_dataset(dataset_name, coordinate_system):
-    dataset_path = get_path_to_dataset(dataset_name, coordinate_system)
-    data = np.load(dataset_path)
+def load_dataset(dataset_name, format):
+    dataset_path = get_path_to_dataset(dataset_name, format)
+    data = np.load(dataset_path) # SHUFFLE?
     return(data['x_train'], data['y_train'], data['x_test'], data['y_test'])
 

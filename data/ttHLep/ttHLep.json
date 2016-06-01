@@ -1,0 +1,10 @@
+{
+  "Sorted": {
+    "background": "background_sorted.csv",
+    "signal": "signal_sorted.csv"
+  },
+  "Unsorted": {
+    "background": "background_unsorted.csv",
+    "signal": "signal_unsorted.csv"
+  }
+}

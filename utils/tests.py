@@ -53,17 +53,17 @@ class DatasetUtilitiesTestCase(unittest.TestCase):
         test_dataset_path = os.path.join(data_dir_path, "TEST")
         self.assertEqual(ds.get_path_to_dataset("TEST"), test_dataset_path)
 
-        # nominal case: dataset_name and coordinate_system
-        test_coordinate_system_path = os.path.join(test_dataset_path,
+        # nominal case: dataset_name and format
+        test_format_path = os.path.join(test_dataset_path,
                                                    "PtEtaPhi.npz")
         self.assertEqual(ds.get_path_to_dataset("TEST", "PtEtaPhi"),
-                         test_coordinate_system_path)
+                         test_format_path)
 
         # if the dataset doesn't exist
         with self.assertRaises(IOError):
             ds.get_path_to_dataset("some random folder")
 
-        # if the coordinate system doesn't exist in a valid dataset
+        # if the format doesn't exist in a valid dataset
         with self.assertRaises(IOError):
             ds.get_path_to_dataset("TEST", "Spherical")
 
@@ -145,12 +145,12 @@ class ReadWriteTestCase(unittest.TestCase):
         self.assertEqual(test, os.path.join(test_dataset_path,
                                             "test_all_ptEtaPhi.txt"))
 
-        # if the dataset doesn't exist but the coordinate system does
+        # if the dataset doesn't exist but the format does
         with self.assertRaises(IOError):
             ar.read_config_file("no way does this dataset exist",
                              "PtEtaPhi")
 
-        # if the coordinate system doesn't exist in a valid dataset
+        # if the format doesn't exist in a valid dataset
         with self.assertRaises(KeyError):
             ar.read_config_file("TEST", "Spherical")
 
