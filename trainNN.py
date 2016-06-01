@@ -14,7 +14,7 @@ from deep_learning.utils.validate import Validator
 from math import ceil
 from time import clock
 import numpy as np
-from keras.utils.visualize_util import plot
+#from keras.utils.visualize_util import plot
 
 """
 model.from_json(file)
@@ -48,10 +48,10 @@ def build(config=None):
 
     layer = exp.structure.add()
     layer.type = 0
-    layer.input_dimension = 15
+    layer.input_dimension = 44
     layer.output_dimension = config["nodes"]
 
-    model.add(Dense(config["nodes"], input_dim=15))
+    model.add(Dense(config["nodes"], input_dim=44))
     model.add(Activation("relu"))
 
     for l in xrange(config["layers"]):

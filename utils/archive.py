@@ -124,7 +124,7 @@ def create_archive(dataset_name, format):
         signal = np.genfromtxt(path_dict["signal_path"], delimiter=',')
         total = np.concatenate((background, signal), axis=0)
         np.random.shuffle(total)
-        cutoff = total.shape[0]*0.8  # 80% training 20% testing
+        cutoff = int(total.shape[0]*0.8) # 80% training 20% testing
         train_raw = total[:cutoff, :]
         test_raw = total[cutoff:, :]
 
