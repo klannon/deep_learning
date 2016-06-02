@@ -79,11 +79,11 @@ def set_configurations():
         terms['timeout'] = time
     if '3' in ending:
         print("For determining plateau:")
-        m = raw_input("What slope do you want to trigger a plateau?\n>> ")
+        x = raw_input("Over what interval would you like to measure the accuracy change?\n>> ")
         print()
-        w = raw_input("How many epochs would you like to calculate the slope over?\n>> ")
+        y = raw_input("What is the minimal increase in percentile you can accept over this interval?\n>> ")
         print()
-        terms['plateau'] = dict(m=float(m), w=int(w))
+        terms['plateau'] = dict(x=float(x), y=int(y))
 
     d = dict(save_name=name,
              dataset=dataset,

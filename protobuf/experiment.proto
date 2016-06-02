@@ -12,7 +12,7 @@ message Layer {
 }
 
 message Epoch {
-	int32 num_seconds = 1;
+	float num_seconds = 1;
 	float train_loss = 2;
 	float train_accuracy = 3;
     float test_loss = 4;

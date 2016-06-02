@@ -86,8 +86,8 @@ def build(config=None):
     if not config.has_key("terms"):
         config["terms"] = dict(epochs=config["max_epochs"],
                                timeout=config["timeout"],
-                               plateau=dict(m=config["slope"],
-                                            w=config["width"]))
+                               plateau=dict(y=config["rise"],
+                                            x=config["run"]))
 
     return model, exp, config["terms"]
 
@@ -124,6 +124,7 @@ def run(model, exp, terms, save_freq=5):
 
     eTimes = np.array([])
     valid._clock = clock()
+    print(model.summary())
     while valid.check():
         t = clock()
         if valid._num_epochs:
@@ -143,19 +144,19 @@ def run(model, exp, terms, save_freq=5):
         epoch = exp.results.add()
         epoch.train_loss, epoch.train_accuracy = model.evaluate(x_train, y_train, batch_size=exp.batch_size, verbose=2)
         epoch.test_loss, epoch.test_accuracy = model.evaluate(x_test, y_test, batch_size=exp.batch_size, verbose=2)
+        epoch.num_seconds = clock() - t
         print("\t Train Accuracy: {:.3f}\tTest Accuracy: {:.3f}".format(epoch.train_accuracy, epoch.test_accuracy))
-        if len(exp.results) >= terms["plateau"]["w"]:
-            print("\t Slope: {:.5f} (test_accuracy / epoch)".format(valid.slope))
-        if (len(exp.results) % save_freq) == 0:
-            save(model, exp, save_dir, exp_file_name)
-            print("\t Saved the model")
-        epoch.num_seconds = int(round(clock() - t))
-        print("\t Time this epoch: {}s".format(epoch.num_seconds), end='')
+        if valid.update_w():
+            print("\t Slope: {:.5f} (test_accuracy / second)".format(valid.slope))
+        print("\t Time this epoch: {:.2f}s".format(epoch.num_seconds), end='')
         if valid._num_epochs:
             eTimes = np.append(eTimes, epoch.num_seconds)
             print("\tFinal ETA: {}".format(convert_seconds(np.median(eTimes) * (valid._num_epochs - valid.epochs))))
         else:
             print()
+        if (len(exp.results) % save_freq) == 0:
+            save(model, exp, save_dir, exp_file_name)
+            print("\t Saved the model")
         sys.stdout.flush()
 
     exp.end_date_time = str(datetime.datetime.now())
@@ -211,17 +212,17 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--timeout",
                         help="how long it should train in minutes",
                         type=float, default=None)
-    parser.add_argument("-mf", "--monitor_fraction", help="a two-tuple with "
+    parser.add_argument("-m", "--monitor_fraction", help="a two-tuple with "
                                                          + "the  training and testing monitoring percents",
                         default=None, type=tuple)
     parser.add_argument("-sf", "--save_freq", help="how often the model "
                                                        + "should be saved and backed up", default=None, type=int)
     parser.add_argument("-s", "--save_name", help="name for the data directory "
                                                    + "and the .exp file within", default=None)
-    parser.add_argument("-w", "--width", help="the number of datapoints to "
-                                              + "average the slope over", type=int, default=None)
-    parser.add_argument("-m", "--slope", help="the slope that determines a "
-                                              + "plateau i.e. when to stop training", type=float, default=None)
+    parser.add_argument("-x", "--run", help="the interval of time to average the slope over",
+                        type=int, default=None)
+    parser.add_argument("-y", "--rise", help="the percentile increase in accuracy that you expect over this interval",
+                        type=float, default=None)
     parser.add_argument("--config", help="train based upon a .cfg file", default=None)
     parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())
@@ -235,8 +236,8 @@ if __name__ == "__main__":
                     monitor_fraction=0,
                     save_freq=5,
                     save_name=None,
-                    width=2,
-                    slope=None,
+                    run=10,
+                    rise=1e-3,
                     config=None,
                     defaults=False)
 
@@ -278,6 +279,19 @@ DIFFERENT NODES PER LAYER
 COULD DO A LITTLE MORE WORK ON PREPROCESSING
 
 SHUFFLE THE DATA WHEN IT'S LOADED?
+
+ADD TO OUTPUT
+    CALL <TO SUMMARY> ARGUMENT
+    SLOPE < 1/100 % / SECOND
+
+Fix shapes: scan over lr and batch
+then try another shape and repeat
+
+(I+1)H + H(H+1)(L-1) + O(H+1)
+
+regularizations
+
+save models
 
 PREPROCESSING STEPS:
 ---> Update .json file

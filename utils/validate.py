@@ -8,8 +8,10 @@ class Validator(object):
         self.exp = experiment
         self._num_epochs = terms["epochs"]
         self._timeout = terms["timeout"]
-        self._m = terms["plateau"]["m"]
-        self._w = terms["plateau"]["w"]
+        self._x = terms["plateau"]["x"]
+        self._y = terms["plateau"]["y"]
+        self._m = self._y / self._x
+        self._w = 1000
         self._clock = clock()
         self.failed = ''
 
@@ -20,7 +22,7 @@ class Validator(object):
         if self._timeout and self.time >= self._timeout:
             self.failed = 'Reached max time'
             return False
-        if (self._m and self._w) and (len(self.exp.results) >= self._w) and (self.slope <= self._m):
+        if (self._x and self._y) and self.update_w() and (self.slope <= self._m):
             self.failed = 'Reached plateau'
             return False
         return True
@@ -31,8 +33,17 @@ class Validator(object):
 
     @property
     def slope(self):
-        return (self.exp.results[-1].test_accuracy - self.exp.results[-self._w].test_accuracy) / (self._w - 1)
+        return (self.exp.results[-1].test_accuracy - self.exp.results[-self._w].test_accuracy) / \
+               sum([x.num_seconds for x in self.exp.results[1-self._w:]])
 
     @property
     def time(self):
         return clock() - self._clock
+
+    def update_w(self):
+        counts = [x.num_seconds for x in self.exp.results]
+        for i in reversed(xrange(len(counts))):
+            if sum(counts[i:]) >= self._x:
+                self._w = len(counts) - i + 1
+                return True if len(counts) >= self._w else False
+        return False
