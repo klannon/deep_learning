@@ -4,7 +4,7 @@ import datetime, os, sys, time, json, argparse
 
 from keras.layers import Activation, Dense, Dropout, Input
 from keras.models import Sequential
-from keras.optimizers import SGD
+from keras.optimizers import Adam
 
 import deep_learning.protobuf as pb
 import deep_learning.utils.dataset as ds
@@ -54,7 +54,7 @@ def build(config=None):
     model.add(Dense(config["nodes"], input_dim=44))
     model.add(Activation("relu"))
 
-    for l in xrange(config["layers"]):
+    for l in xrange(config["layers"]-1):
         layer = exp.structure.add()
         layer.type = 0
         layer.input_dimension = config["nodes"]
@@ -73,15 +73,15 @@ def build(config=None):
     # Generate the optimization method
     ##
 
-    opt = pb.SGD()
+    opt = pb.Adam()
     opt.lr = config["learning_rate"]
-    exp.sgd.MergeFrom(opt)
+    exp.adam.MergeFrom(opt)
 
     ##
     # Compile the model
     ##
 
-    model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=opt.lr), metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=opt.lr), metrics=['accuracy'])
 
     if not config.has_key("terms"):
         config["terms"] = dict(epochs=config["max_epochs"],
@@ -124,7 +124,7 @@ def run(model, exp, terms, save_freq=5):
 
     eTimes = np.array([])
     valid._clock = clock()
-    print(model.summary())
+    model.summary()
     while valid.check():
         t = clock()
         if valid._num_epochs:
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())
 
-    defaults = dict(learning_rate=0.01,
+    defaults = dict(learning_rate=0.001,
                     batch_size=64,
                     layers=5,
                     max_epochs=None,
@@ -280,14 +280,16 @@ COULD DO A LITTLE MORE WORK ON PREPROCESSING
 
 SHUFFLE THE DATA WHEN IT'S LOADED?
 
-ADD TO OUTPUT
-    CALL <TO SUMMARY> ARGUMENT
-    SLOPE < 1/100 % / SECOND
-
 Fix shapes: scan over lr and batch
 then try another shape and repeat
 
 (I+1)H + H(H+1)(L-1) + O(H+1)
+
+Shapes:
+    50x5
+    35x10
+    28x15
+    24x20
 
 regularizations
 
