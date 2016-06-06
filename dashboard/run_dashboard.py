@@ -1,7 +1,7 @@
 from flask import Flask, render_template, url_for, abort
 app = Flask(__name__)
 
-import deep_learning.utils.dataset_utilities as ds_utils
+import deep_learning.utils.dataset as ds
 import deep_learning.dashboard.graph as graph
 
 
@@ -10,7 +10,7 @@ import deep_learning.dashboard.graph as graph
 ######################
 
 def dataset_page(dataset_name):
-    files = ds_utils.get_experiments_from_dataset(dataset_name)
+    files = ds.get_experiments_from_dataset(dataset_name)
     return render_template("dataset.html", dataset_name = dataset_name, file_names = files)
 
 def file_page(dataset_name, file_name):
@@ -53,7 +53,7 @@ def dataset_and_file_handler(name):
 
 @app.route('/')
 def home_page():
-    datasets = utils.get_datasets()
+    datasets = ds.get_available_datasets()
     return render_template("home.html", dataset_names=datasets)
 
 if __name__ == '__main__':

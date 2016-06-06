@@ -2,7 +2,7 @@ import os
 
 from deep_learning.protobuf import load_experiment
 from deep_learning.protobuf import Experiment
-import deep_learning.utils.dataset as ds_utils
+import deep_learning.utils.dataset as ds
 
 import plotly
 from plotly import tools
@@ -34,9 +34,9 @@ from plotly.tools import FigureFactory as FF
 
 
 def make_plots_from_single_file(dataset_name, file_name):
-    data_path = ds_utils.get_data_dir_path()
+    data_path = ds.get_data_dir_path()
     file_path = os.path.join(data_path, dataset_name,
-                             file_name)
+                             ("%s.exp" % file_name))
     exp = load_experiment(file_path)
 
     accuracies = map(lambda a: a.train_accuracy, exp.results[:])

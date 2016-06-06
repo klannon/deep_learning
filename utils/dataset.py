@@ -134,7 +134,7 @@ def get_experiments_from_dataset(dataset_name):
     experiment_names = []
     for file_name in dataset_files:
         components = file_name.split(".")
-        if components[1] == "experiment":
+        if components[1] == "exp":
             experiment_names.append(components[0])
 
     return experiment_names
