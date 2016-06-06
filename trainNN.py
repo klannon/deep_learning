@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import datetime, os, sys, time, json, argparse
 
-from keras.layers import Activation, Dense, Dropout, Input
+from keras.layers import Dense, Dropout, Input
 from keras.models import Sequential
 from keras.optimizers import Adam
 
@@ -11,6 +11,7 @@ import deep_learning.utils.dataset as ds
 from deep_learning.utils import progress, convert_seconds
 from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
+import deep_learning.utils.transformations as tr
 from math import ceil
 from time import clock
 import numpy as np
@@ -51,30 +52,29 @@ def build(config=None):
     layer.input_dimension = 44
     layer.output_dimension = config["nodes"]
 
-    model.add(Dense(config["nodes"], input_dim=44))
-    model.add(Activation("relu"))
+    model.add(Dense(config["nodes"], input_dim=44, activation="relu"))
+    #model.add(Dropout(0.2))
 
     for l in xrange(config["layers"]-1):
         layer = exp.structure.add()
         layer.type = 0
         layer.input_dimension = config["nodes"]
         layer.output_dimension = config["nodes"]
-        model.add(Dense(config["nodes"]))
-        model.add(Activation("relu"))
+        model.add(Dense(config["nodes"], activation="relu"))
+        #model.add(Dropout(0.2))
 
     layer = exp.structure.add()
     layer.type = 1
     layer.input_dimension = config["nodes"]
     layer.output_dimension = 2
-    model.add(Dense(output_dim=2))
-    model.add(Activation("softmax"))
+    model.add(Dense(output_dim=2, activation="softmax"))
 
     ##
     # Generate the optimization method
     ##
 
     opt = pb.Adam()
-    opt.lr = config["learning_rate"]
+    opt.lr = 0.001 #config["learning_rate"]
     exp.adam.MergeFrom(opt)
 
     ##
@@ -116,6 +116,7 @@ def run(model, exp, terms, save_freq=5):
     ##
 
     x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
+    (x_train, x_test) = tr.transform(x_train, x_test)
 
     train_length = x_train.shape[0]
     num_batches = int(ceil(train_length / exp.batch_size))
@@ -236,8 +237,8 @@ if __name__ == "__main__":
                     monitor_fraction=0,
                     save_freq=5,
                     save_name=None,
-                    run=10,
-                    rise=1e-3,
+                    run=None,
+                    rise=None,
                     config=None,
                     defaults=False)
 
@@ -294,6 +295,8 @@ Shapes:
 regularizations
 
 save models
+
+shuffling and normalizing each batch
 
 PREPROCESSING STEPS:
 ---> Update .json file

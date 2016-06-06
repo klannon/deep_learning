@@ -10,7 +10,8 @@ class Validator(object):
         self._timeout = terms["timeout"]
         self._x = terms["plateau"]["x"]
         self._y = terms["plateau"]["y"]
-        self._m = self._y / self._x
+        if self._x and self._y:
+            self._m = self._y / self._x
         self._w = 1000
         self._clock = clock()
         self.failed = ''

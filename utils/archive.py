@@ -4,7 +4,6 @@ to .npz files
 """
 import json, math, os, csv, tempfile
 import numpy as np
-import deep_learning.utils.transformations as tr
 import deep_learning.utils.dataset as ds
 
 def read_config_file(dataset_name, format):
@@ -88,6 +87,47 @@ def take_out_event_num(file_path):
             for line in temp:
                 data_file.write(line)
 
+def augment(dataset, format, shift_size):
+    shift_size *= (math.pi/180.0)
+    num_shifts = int(2*math.pi / shift_size)
+    x_train, y_train, x_test, y_test = ds.load_dataset(dataset, format)
+    x = np.concatenate((x_train, x_test))
+    y = np.concatenate((y_train, y_test))
+    del x_train,x_test,y_train,y_test
+    for ix, line in enumerate(x):
+        if (ix+1)%1000 == 0: print ix
+        if ix == 0:
+            augmented_x = line
+            augmented_y = y[ix]
+        else:
+            augmented_x = np.concatenate((augmented_x, line))
+            augmented_y = np.concatenate((augmented_y, y[ix]))
+        for s in xrange(num_shifts):
+            shift = s*shift_size
+            augmented_x = np.concatenate((augmented_x,
+                                        [val+shift if index%4==2 else val for index,val in enumerate(line)]))
+            augmented_y = np.concatenate((augmented_y, y[ix]))
+    del x,y
+    augmented_x = augmented_x.flatten().reshape((augmented_x.size//44, 44))
+    augmented_y = augmented_y.flatten().reshape((augmented_y.size, 1))
+    total = np.concatenate((augmented_y, augmented_x))
+    del augmented_x, augmented_y
+    np.random.shuffle(total)
+    cutoff = int(total.shape[0] * 0.8)  # 80% training 20% testing
+    train_raw = total[:cutoff, :]
+    test_raw = total[cutoff:, :]
+
+    y_train = make_one_hot(train_raw[:, 0])
+    y_test = make_one_hot(test_raw[:, 0])
+
+    x_train = train_raw[:, 1:]
+    del train_raw
+    x_test = test_raw[:, 1:]
+    del test_raw
+
+    output_path = os.path.join(ds.get_path_to_dataset(dataset), "augmented_{}.npz".format(format))
+    np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
+
 def create_archive(dataset_name, format):
     """ converts a series of text files into a single .npz archive
     create_archive takes the name of a dataset and the
@@ -138,7 +178,6 @@ def create_archive(dataset_name, format):
     del test_raw
     
     # transform all rows, excluding the labels
-    (x_train, x_test) = tr.transform(x_train, x_test)
     output_path = os.path.join(ds.get_path_to_dataset(dataset_name), ("%s.npz" % format))
     np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
 
