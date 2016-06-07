@@ -2,9 +2,11 @@
 This module contains functions for loading data from and writing data
 to .npz files
 """
-import json, math, os, csv, tempfile
+import json, math, os
 import numpy as np
 import deep_learning.utils.dataset as ds
+import deep_learning.utils.transformations as tr
+from deep_learning.utils import verify_angle
 
 def read_config_file(dataset_name, format):
     """ Reads a json file containing the locations of train/test data
@@ -51,8 +53,6 @@ def read_config_file(dataset_name, format):
         return dict(background_path=background_path,
                     signal_path=signal_path)
 
-
-
 def make_one_hot(labels):
     """ makes a one hot encoding of labels 
 
@@ -66,7 +66,7 @@ def make_one_hot(labels):
     """
     y_max = math.ceil(np.amax(labels))
     y_min = math.floor(np.amin(labels))
-    num_classes = (y_max - y_min) + 1
+    num_classes = int((y_max - y_min) + 1)
     labels_one_hot = np.zeros((labels.shape[0], num_classes))
     for i in range(labels.shape[0]):
         class_index = labels[i] - y_min # where in the sequence of
@@ -75,18 +75,6 @@ def make_one_hot(labels):
 
     return labels_one_hot
 
-def take_out_event_num(file_path):
-    with tempfile.TemporaryFile() as temp:
-        with open(file_path, 'rb') as data_file:
-            reader = csv.reader(data_file)
-            reader.next()
-            for line in reader:
-                temp.write(','.join(filter(None, [x.strip() for x in [line[0],] + line[2:]])) + "\n")
-        temp.seek(0)
-        with open(file_path, 'w') as data_file:
-            for line in temp:
-                data_file.write(line)
-
 def augment(dataset, format, shift_size):
     shift_size *= (math.pi/180.0)
     num_shifts = int(2*math.pi / shift_size)
@@ -94,36 +82,21 @@ def augment(dataset, format, shift_size):
     x = np.concatenate((x_train, x_test))
     y = np.concatenate((y_train, y_test))
     del x_train,x_test,y_train,y_test
+    augmented_x = np.zeros((x.shape[0]*num_shifts, x.shape[1]))
+    augmented_y = np.zeros((y.shape[0]*num_shifts, y.shape[1]))
     for ix, line in enumerate(x):
-        if (ix+1)%1000 == 0: print ix
-        if ix == 0:
-            augmented_x = line
-            augmented_y = y[ix]
-        else:
-            augmented_x = np.concatenate((augmented_x, line))
-            augmented_y = np.concatenate((augmented_y, y[ix]))
+        if (ix+1)%1000 == 0: print ix+1
         for s in xrange(num_shifts):
-            shift = s*shift_size
-            augmented_x = np.concatenate((augmented_x,
-                                        [val+shift if index%4==2 else val for index,val in enumerate(line)]))
-            augmented_y = np.concatenate((augmented_y, y[ix]))
+            shift = s * shift_size
+            augmented_x[ix*num_shifts+s] = [verify_angle(val+shift) if index%4==2 else val for index,val in enumerate(line)]
+            augmented_y[ix*num_shifts+s] = y[ix]
     del x,y
-    augmented_x = augmented_x.flatten().reshape((augmented_x.size//44, 44))
-    augmented_y = augmented_y.flatten().reshape((augmented_y.size, 1))
-    total = np.concatenate((augmented_y, augmented_x))
-    del augmented_x, augmented_y
-    np.random.shuffle(total)
-    cutoff = int(total.shape[0] * 0.8)  # 80% training 20% testing
-    train_raw = total[:cutoff, :]
-    test_raw = total[cutoff:, :]
-
-    y_train = make_one_hot(train_raw[:, 0])
-    y_test = make_one_hot(test_raw[:, 0])
-
-    x_train = train_raw[:, 1:]
-    del train_raw
-    x_test = test_raw[:, 1:]
-    del test_raw
+    tr.shuffle_in_unison(augmented_x, augmented_y)
+    cutoff = int(augmented_x.shape[0] * 0.8)  # 80% training 20% testing
+    x_train = augmented_x[:cutoff, :]
+    x_test = augmented_x[cutoff:, :]
+    y_train = augmented_y[:cutoff, :]
+    y_test = augmented_y[cutoff:, :]
 
     output_path = os.path.join(ds.get_path_to_dataset(dataset), "augmented_{}.npz".format(format))
     np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
@@ -158,8 +131,6 @@ def create_archive(dataset_name, format):
         train_raw = np.genfromtxt(path_dict["train_path"], delimiter=',')
         test_raw = np.genfromtxt(path_dict["test_path"], delimiter=',')
     elif "background_path" in path_dict:
-        take_out_event_num(path_dict["background_path"])
-        take_out_event_num(path_dict["signal_path"])
         background = np.genfromtxt(path_dict["background_path"], delimiter=',')
         signal = np.genfromtxt(path_dict["signal_path"], delimiter=',')
         total = np.concatenate((background, signal), axis=0)
@@ -176,8 +147,7 @@ def create_archive(dataset_name, format):
     del train_raw
     x_test = test_raw[:, 1:]
     del test_raw
-    
-    # transform all rows, excluding the labels
+
     output_path = os.path.join(ds.get_path_to_dataset(dataset_name), ("%s.npz" % format))
     np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
 

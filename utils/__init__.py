@@ -1,5 +1,7 @@
 from __future__ import division, print_function
 from os import fstat
+import tempfile, csv
+from math import pi
 
 
 def which(myDict):
@@ -31,3 +33,24 @@ def convert_seconds(s):
             continue
         rval += "{}{} ".format(t, u[i])
     return rval.rstrip()
+
+def cleanCharlieFile(file_path):
+    with tempfile.TemporaryFile() as temp:
+        with open(file_path, 'rb') as data_file:
+            reader = csv.reader(data_file)
+            reader.next()
+            for line in reader:
+                temp.write(','.join(filter(None, [x.strip() for x in [line[0],] + line[2:]])) + "\n")
+        temp.seek(0)
+        with open(file_path, 'w') as data_file:
+            for line in temp:
+                data_file.write(line)
+
+def verify_angle(angle):
+    if angle > pi:
+        while angle > pi:
+            angle -= 2*pi
+    elif angle < -pi:
+        while angle < -pi:
+            angle += 2*pi
+    return angle

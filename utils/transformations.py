@@ -14,7 +14,7 @@ def transform(train_set, test_set):
 
 def shuffle_in_unison(a, b):
     """ Shuffle two numpy arrays (data and labels) simultaneously.
-    Code curtosy of (http://stackoverflow.com/questions/4601373/
+    Code courtesy of (http://stackoverflow.com/questions/4601373/
     better-way-to-shuffle-two-numpy-arrays-in-unison).
 
     Parameters
@@ -31,4 +31,3 @@ def shuffle_in_unison(a, b):
     np.random.shuffle(a)
     np.random.set_state(rng_state)
     np.random.shuffle(b)
-    return (a, b)
