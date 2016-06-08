@@ -7,10 +7,22 @@ def standardize(datasets):   return map(pp.scale, datasets)
 
 def get_transform(dataset):   return StandardScaler().fit(dataset)
 
-def transform(train_set, test_set):
-    scale = StandardScaler().fit(train_set)
-    train_set, test_set = scale.transform(train_set), scale.transform(test_set)
-    return train_set, test_set
+def normalize(dataset):
+    """ normalizes a dataset
+    normalize takes a dataset (numpy array) and returns a copy of the dataset
+    with unit variance and zero mean
+
+    Parameters
+    ----------
+    dataset : numpy array to normalize
+
+    Returns
+    -------
+    normalized_dataset : version of dataset that is normalized
+    """
+    scale = StandardScaler().fit(dataset)
+    normalized_dataset = scale.transform(dataset)
+    return normalized_dataset
 
 def shuffle_in_unison(a, b):
     """ Shuffle two numpy arrays (data and labels) simultaneously.
@@ -31,3 +43,4 @@ def shuffle_in_unison(a, b):
     np.random.shuffle(a)
     np.random.set_state(rng_state)
     np.random.shuffle(b)
+    return (a, b)
