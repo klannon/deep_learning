@@ -79,27 +79,18 @@ def augment(dataset, format, shift_size):
     shift_size *= (math.pi/180.0)
     num_shifts = int(2*math.pi / shift_size)
     x_train, y_train, x_test, y_test = ds.load_dataset(dataset, format)
-    x = np.concatenate((x_train, x_test))
-    y = np.concatenate((y_train, y_test))
-    del x_train,x_test,y_train,y_test
-    augmented_x = np.zeros((x.shape[0]*num_shifts, x.shape[1]))
-    augmented_y = np.zeros((y.shape[0]*num_shifts, y.shape[1]))
-    for ix, line in enumerate(x):
+    augmented_x = np.zeros((x_train.shape[0]*num_shifts, x_train.shape[1]))
+    augmented_y = np.zeros((y_train.shape[0]*num_shifts, y_train.shape[1]))
+    for ix, line in enumerate(x_train):
         if (ix+1)%1000 == 0: print ix+1
         for s in xrange(num_shifts):
             shift = s * shift_size
             augmented_x[ix*num_shifts+s] = [verify_angle(val+shift) if index%4==2 else val for index,val in enumerate(line)]
-            augmented_y[ix*num_shifts+s] = y[ix]
-    del x,y
+            augmented_y[ix*num_shifts+s] = y_train[ix]
     tr.shuffle_in_unison(augmented_x, augmented_y)
-    cutoff = int(augmented_x.shape[0] * 0.8)  # 80% training 20% testing
-    x_train = augmented_x[:cutoff, :]
-    x_test = augmented_x[cutoff:, :]
-    y_train = augmented_y[:cutoff, :]
-    y_test = augmented_y[cutoff:, :]
 
     output_path = os.path.join(ds.get_path_to_dataset(dataset), "augmented_{}.npz".format(format))
-    np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
+    np.savez(output_path, x_train=augmented_x, x_test=x_test, y_train=augmented_y, y_test=y_test)
 
 def create_archive(dataset_name, format):
     """ converts a series of text files into a single .npz archive

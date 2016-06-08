@@ -195,8 +195,7 @@ if __name__ == "__main__":
     # Set up the command line arguments
     ##
 
-    parser.add_argument("dataset", metavar="Dataset", help="the dataset you wish to use")
-    parser.add_argument("coords", metavar="Format", help="the data format you wish to use")
+    parser.add_argument("dataset", metavar="Dataset/Format", help="The dataset and format you want separated by a slash")
     parser.add_argument("-r", "--learning_rate", help="learning rate",
                         type=float, default=None)
     parser.add_argument("-b", "--batch_size", help="size of each batch "
@@ -216,17 +215,18 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--monitor_fraction", help="a two-tuple with "
                                                          + "the  training and testing monitoring percents",
                         default=None, type=tuple)
-    parser.add_argument("-sf", "--save_freq", help="how often the model "
+    parser.add_argument("-f", "--save_freq", help="how often the model "
                                                        + "should be saved and backed up", default=None, type=int)
     parser.add_argument("-s", "--save_name", help="name for the data directory "
                                                    + "and the .exp file within", default=None)
     parser.add_argument("-x", "--run", help="the interval of time to average the slope over",
-                        type=int, default=None)
-    parser.add_argument("-y", "--rise", help="the percentile increase in accuracy that you expect over this interval",
                         type=float, default=None)
+    parser.add_argument("-y", "--rise", help="the percentile increase in accuracy that you expect over this interval",
+                        type=lambda y: float(y) if y.isdigit() else float(y[-1])/100, default=None)
     parser.add_argument("--config", help="train based upon a .cfg file", default=None)
     parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())
+    args["dataset"], args["coords"] = args["dataset"].split('/')
 
     defaults = dict(learning_rate=0.001,
                     batch_size=64,

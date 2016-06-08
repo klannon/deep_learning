@@ -5,11 +5,11 @@ from math import pi
 
 
 def which(myDict):
-    rval = ""
+    rval = []
     for k, v in myDict.items():
         if v is True:
-            rval += k + ', '
-    return rval.rstrip(', ') if rval.rstrip(', ') else None
+            rval.append(k)
+    return rval
 
 def progress(batch, total, batch_size, eta, end=''):
     bars = batch*100//total//4
