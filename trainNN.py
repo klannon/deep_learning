@@ -116,7 +116,7 @@ def run(model, exp, terms, save_freq=5):
     ##
 
     x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
-    (x_train, x_test) = tr.transform(x_train, x_test)
+    x_train, x_test = tr.transform(x_train, x_test)
 
     train_length = x_train.shape[0]
     num_batches = int(ceil(train_length / exp.batch_size))
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--run", help="the interval of time to average the slope over",
                         type=float, default=None)
     parser.add_argument("-y", "--rise", help="the percentile increase in accuracy that you expect over this interval",
-                        type=lambda y: float(y) if y.isdigit() else float(y[-1])/100, default=None)
+                        type=lambda y: float(y) if y.isdigit() else float(y[:-1])/100, default=None)
     parser.add_argument("--config", help="train based upon a .cfg file", default=None)
     parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())

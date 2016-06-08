@@ -24,6 +24,11 @@ def normalize(dataset):
     normalized_dataset = scale.transform(dataset)
     return normalized_dataset
 
+def transform(train_set, test_set):
+    scale = StandardScaler().fit(train_set)
+    train_set, test_set = scale.transform(train_set), scale.transform(test_set)
+    return train_set, test_set
+
 def shuffle_in_unison(a, b):
     """ Shuffle two numpy arrays (data and labels) simultaneously.
     Code courtesy of (http://stackoverflow.com/questions/4601373/
