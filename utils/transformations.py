@@ -26,7 +26,7 @@ def normalize(dataset):
 
 def shuffle_in_unison(a, b):
     """ Shuffle two numpy arrays (data and labels) simultaneously.
-    Code curtosy of (http://stackoverflow.com/questions/4601373/
+    Code courtesy of (http://stackoverflow.com/questions/4601373/
     better-way-to-shuffle-two-numpy-arrays-in-unison).
 
     Parameters
