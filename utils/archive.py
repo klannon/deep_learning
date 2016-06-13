@@ -53,6 +53,10 @@ def read_config_file(dataset_name, format):
         return dict(background_path=background_path,
                     signal_path=signal_path)
 
+    elif "both" in file_dict:
+        both_path = os.path.join(dataset_path, file_dict["both"])
+        return dict(both=both_path)
+
 def make_one_hot(labels):
     """ makes a one hot encoding of labels 
 
@@ -119,16 +123,22 @@ def create_archive(dataset_name, format):
     """
     path_dict = read_config_file(dataset_name, format)
     if "train_path" in path_dict:
-        train_raw = np.genfromtxt(path_dict["train_path"], delimiter=',')
-        test_raw = np.genfromtxt(path_dict["test_path"], delimiter=',')
+        train_raw = np.genfromtxt(path_dict["train_path"], delimiter=',', dtype="float32")
+        test_raw = np.genfromtxt(path_dict["test_path"], delimiter=',', dtype="float32")
     elif "background_path" in path_dict:
-        background = np.genfromtxt(path_dict["background_path"], delimiter=',')
-        signal = np.genfromtxt(path_dict["signal_path"], delimiter=',')
+        background = np.genfromtxt(path_dict["background_path"], delimiter=',', dtype="float32")
+        signal = np.genfromtxt(path_dict["signal_path"], delimiter=',', dtype="float32")
         total = np.concatenate((background, signal), axis=0)
         np.random.shuffle(total)
         cutoff = int(total.shape[0]*0.8) # 80% training 20% testing
         train_raw = total[:cutoff, :]
         test_raw = total[cutoff:, :]
+    elif "both" in path_dict:
+        both = np.genfromtxt(path_dict["both"], delimiter=',', dtype="float32")
+        np.random.shuffle(both)
+        cutoff = int(both.shape[0] * 0.8)  # 80% training 20% testing
+        train_raw = both[:cutoff, :]
+        test_raw = both[cutoff:, :]
 
 
     y_train = make_one_hot(train_raw[:, 0])

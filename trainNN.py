@@ -5,6 +5,7 @@ import datetime, os, sys, time, json, argparse
 from keras.layers import Dense, Dropout, Input
 from keras.models import Sequential
 from keras.optimizers import Adam
+from keras.regularizers import l1
 
 import deep_learning.protobuf as pb
 import deep_learning.utils.dataset as ds
@@ -49,19 +50,19 @@ def build(config=None):
 
     layer = exp.structure.add()
     layer.type = 0
-    layer.input_dimension = 44
+    layer.input_dimension = 15
     layer.output_dimension = config["nodes"]
 
-    model.add(Dense(config["nodes"], input_dim=44, activation="relu"))
-    #model.add(Dropout(0.2))
+    model.add(Dense(config["nodes"], input_dim=15, activation="relu"))#, W_regularizer=l1(0.001)))
+    #model.add(Dropout(0.5))
 
     for l in xrange(config["layers"]-1):
         layer = exp.structure.add()
         layer.type = 0
         layer.input_dimension = config["nodes"]
         layer.output_dimension = config["nodes"]
-        model.add(Dense(config["nodes"], activation="relu"))
-        #model.add(Dropout(0.2))
+        model.add(Dense(config["nodes"], activation="relu"))#, W_regularizer=l1(0.001)))
+    #    model.add(Dropout(0.5))
 
     layer = exp.structure.add()
     layer.type = 1
@@ -74,7 +75,7 @@ def build(config=None):
     ##
 
     opt = pb.Adam()
-    opt.lr = 0.001 #config["learning_rate"]
+    opt.lr = config["learning_rate"]
     exp.adam.MergeFrom(opt)
 
     ##
@@ -242,13 +243,10 @@ if __name__ == "__main__":
                     config=None,
                     defaults=False)
 
-    if bool(filter(None, args.values())):
-        for k,v in args.items():
-            if not v:
-                args[k] = defaults[k]
-        model, exp, terms = build(args)
-    else:
-        model, exp, terms = build()
+    for k,v in args.items():
+        if not v:
+            args[k] = defaults[k]
+    model, exp, terms = build(args)
 
     run(model, exp, terms, args["save_freq"])
 

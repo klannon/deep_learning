@@ -2,6 +2,9 @@ from __future__ import division, print_function
 from os import fstat
 import tempfile, csv
 from math import pi
+from .archive import create_archive
+from .dataset import load_dataset
+from .transformations import transform
 
 
 def which(myDict):

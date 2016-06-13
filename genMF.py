@@ -3,8 +3,8 @@ import argparse, os
 from deep_learning import trainNN
 import deep_learning.utils.dataset as ds
 
-template = "{0}{7}{1}{7}cfg.json {0}{7}{1}{7}{1}.exp {0}{7}{1}{7}weights.npy : {4} {0}{7}{3}.npz\n"+\
-           "    python {4} {5} {2}/{3} {6}\n"
+template = '"{0}{7}{1}{7}cfg.json" "{0}{7}{1}{7}{1}.exp" "{0}{7}{1}{7}weights.npy" : "{4}" "{0}{7}{3}.npz"\n'+\
+           '    python "{4}" {5} {2}/{3} {6}'
 
 def write_Makeflow(datafile, **funcs):
     # var to update, num of jobs, func(var, i)
