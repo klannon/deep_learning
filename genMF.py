@@ -3,8 +3,8 @@ import argparse, os
 from deep_learning import trainNN
 import deep_learning.utils.dataset as ds
 
-template = '"{0}{7}{1}{7}cfg.json" "{0}{7}{1}{7}{1}.exp" "{0}{7}{1}{7}weights.npy" : "{4}" "{0}{7}{3}.npz"\n'+\
-           '    python "{4}" {5} {2}/{3} {6}'
+template = '{0}{7}{1}{7}cfg.json {0}{7}{1}{7}{1}.exp {0}{7}{1}{7}weights.npy : {4} {0}{7}{3}.npz\n'+\
+           '    python {4} {5} {2}/{3} {6}'
 
 def write_Makeflow(datafile, **funcs):
     # var to update, num of jobs, func(var, i)
@@ -34,7 +34,7 @@ def write_Makeflow(datafile, **funcs):
 
     with open(sys_args["out"], 'w') as f:
         for i in xrange(sys_args["jobs"]):
-            ups = ' '.join(["--{}={}".format(k, v(i)) for k,v in funcs.items()])
+            ups = ' '.join(["--{}{}".format(k, v(i)) for k,v in funcs.items()])
             name = funcs["save_name"](i)
             dataset, format = datafile(i).split('/')
             datadir = ds.get_path_to_dataset(dataset)
@@ -43,6 +43,6 @@ def write_Makeflow(datafile, **funcs):
 
 if __name__ == '__main__':
     #Dict of funcs that update a parameter, i.e.:
-    funcs = {"s": lambda i: "job{}".format(i),}      # Updates the save name (required!)
+    funcs = {"s": lambda i: "job{}".format(i), }      # Updates the save name (required!)
     #         "l": lambda i: (i+1)*10}               # Updates the num_layers
     write_Makeflow(lambda i: "ttHLep/Sorted", **funcs)

@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-import datetime, os, sys, time, json, argparse
+import datetime, os, sys, time, argparse
 
 from keras.layers import Dense, Dropout, Input
-from keras.models import Sequential
+from keras.models import Sequential, model_from_json
 from keras.optimizers import Adam
 from keras.regularizers import l1
 
@@ -13,6 +13,7 @@ from deep_learning.utils import progress, convert_seconds
 from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
 import deep_learning.utils.transformations as tr
+import deep_learning.utils.stats as st
 from math import ceil
 from time import clock
 import numpy as np
@@ -25,6 +26,14 @@ from keras.utils.visualize_util import plot
 plot(model, to_file='model.png')
 visualization
 """
+
+def load_model(exp_name):
+    data, name = exp_name.split('/')
+    exp_dir = ds.get_path_to_dataset(data) + os.sep + name +os.sep
+    with open(exp_dir+"cfg.json") as json:
+        model = model_from_json(json.read())
+    model.set_weights(np.load(exp_dir+"weights.npy"))
+    return model
 
 
 def build(config=None):
@@ -50,10 +59,10 @@ def build(config=None):
 
     layer = exp.structure.add()
     layer.type = 0
-    layer.input_dimension = 15
+    layer.input_dimension = 44
     layer.output_dimension = config["nodes"]
 
-    model.add(Dense(config["nodes"], input_dim=15, activation="relu"))#, W_regularizer=l1(0.001)))
+    model.add(Dense(config["nodes"], input_dim=44, activation="relu"))#, W_regularizer=l1(0.001)))
     #model.add(Dropout(0.5))
 
     for l in xrange(config["layers"]-1):
@@ -118,6 +127,8 @@ def run(model, exp, terms, save_freq=5):
 
     x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
     x_train, x_test = tr.transform(x_train, x_test)
+    data = x_train, y_train, x_test, y_test
+
 
     train_length = x_train.shape[0]
     num_batches = int(ceil(train_length / exp.batch_size))
@@ -137,16 +148,25 @@ def run(model, exp, terms, save_freq=5):
         bTimes = np.array([])
         for b in xrange(num_batches):
             bt = clock()
+            # Update progress bar
             progress(b, num_batches, exp.batch_size, bETA)
+            # Train on a batch
             model.train_on_batch(x_train[b*exp.batch_size:b*exp.batch_size+exp.batch_size, :],
                                  y_train[b*exp.batch_size:b*exp.batch_size+exp.batch_size, :])
             bTimes = np.append(bTimes, clock()-bt)
             bETA = np.median(bTimes)*(num_batches-b-1)
+        # Finish progress bar
         progress(num_batches, num_batches, exp.batch_size, 0, end='\n')
+        # Calculate stats
+        sig = st.significance(model, data)
+        auc = st.AUC(model, data)
+        matrix = st.confusion_matrix(model, data, offset='\t ')
+        # Add the epoch results to the experiment object
         epoch = exp.results.add()
         epoch.train_loss, epoch.train_accuracy = model.evaluate(x_train, y_train, batch_size=exp.batch_size, verbose=2)
         epoch.test_loss, epoch.test_accuracy = model.evaluate(x_test, y_test, batch_size=exp.batch_size, verbose=2)
         epoch.num_seconds = clock() - t
+        # Print statistics
         print("\t Train Accuracy: {:.3f}\tTest Accuracy: {:.3f}".format(epoch.train_accuracy, epoch.test_accuracy))
         if valid.update_w():
             print("\t Slope: {:.5f} (test_accuracy / second)".format(valid.slope))
@@ -156,9 +176,13 @@ def run(model, exp, terms, save_freq=5):
             print("\tFinal ETA: {}".format(convert_seconds(np.median(eTimes) * (valid._num_epochs - valid.epochs))))
         else:
             print()
+        print("\t Significance (S/sqrt(B)): {:.2f}".format(sig))
+        print("\t Area Under the Curve (efficiency): {:.3f}".format(auc))
+        print(matrix)
+
         if (len(exp.results) % save_freq) == 0:
             save(model, exp, save_dir, exp_file_name)
-            print("\t Saved the model")
+            print("\t Saved the model\n")
         sys.stdout.flush()
 
     exp.end_date_time = str(datetime.datetime.now())
@@ -184,7 +208,7 @@ def save(model, exp, save_dir, exp_file_name):
 
     config = model.to_json()
     with open("cfg.json", 'w') as fp:
-        json.dump(config, fp)
+        fp.write(config)
 
     w = model.get_weights()
     np.save("weights", w)

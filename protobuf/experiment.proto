@@ -45,6 +45,7 @@ message Experiment {
         enum Dataset {
 	        OSU_TTBAR = 0;
 	        ttHLep = 1;
+            UC_HIGGS = 2;
         };
         Dataset dataset = 14;
         string coordinates = 15;
