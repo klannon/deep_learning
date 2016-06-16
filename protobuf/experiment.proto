@@ -17,6 +17,20 @@ message Epoch {
 	float train_accuracy = 3;
     float test_loss = 4;
     float test_accuracy = 5;
+    float s_b = 6;
+    float auc = 7;
+    repeated Efficiencies curve = 8;
+    repeated Row matrix = 9;
+}
+
+message Row {
+    repeated float columns = 1;
+}
+
+message Efficiencies {
+    float signal = 1;
+    float background = 2;
+    float cutoff = 3;
 }
 
 message Experiment {

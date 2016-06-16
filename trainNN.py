@@ -157,14 +157,15 @@ def run(model, exp, terms, save_freq=5):
             bETA = np.median(bTimes)*(num_batches-b-1)
         # Finish progress bar
         progress(num_batches, num_batches, exp.batch_size, 0, end='\n')
-        # Calculate stats
-        sig = st.significance(model, data)
-        auc = st.AUC(model, data)
-        matrix = st.confusion_matrix(model, data, offset='\t ')
-        # Add the epoch results to the experiment object
+        # Calculate stats and add the epoch results to the experiment object
         epoch = exp.results.add()
         epoch.train_loss, epoch.train_accuracy = model.evaluate(x_train, y_train, batch_size=exp.batch_size, verbose=2)
         epoch.test_loss, epoch.test_accuracy = model.evaluate(x_test, y_test, batch_size=exp.batch_size, verbose=2)
+        epoch.s_b = st.significance(model, data)
+        epoch.auc = st.AUC(model, data, experiment_epoch=epoch)
+        for r in st.num_of_each_cell(model, data):
+            epoch.matrix.add().columns.extend(r)
+        matrix = st.confusion_matrix(model, data, offset='\t ')
         epoch.num_seconds = clock() - t
         # Print statistics
         print("\t Train Accuracy: {:.3f}\tTest Accuracy: {:.3f}".format(epoch.train_accuracy, epoch.test_accuracy))
@@ -176,8 +177,8 @@ def run(model, exp, terms, save_freq=5):
             print("\tFinal ETA: {}".format(convert_seconds(np.median(eTimes) * (valid._num_epochs - valid.epochs))))
         else:
             print()
-        print("\t Significance (S/sqrt(B)): {:.2f}".format(sig))
-        print("\t Area Under the Curve (efficiency): {:.3f}".format(auc))
+        print("\t Significance (S/sqrt(B)): {:.2f}".format(epoch.s_b))
+        print("\t Area Under the Curve (efficiency): {:.3f}".format(epoch.auc))
         print(matrix)
 
         if (len(exp.results) % save_freq) == 0:
@@ -204,7 +205,6 @@ def save(model, exp, save_dir, exp_file_name):
 
     with open(exp_file_name, "wb") as experiment_file:
         experiment_file.write(exp.SerializeToString())
-        experiment_file.close()
 
     config = model.to_json()
     with open("cfg.json", 'w') as fp:
