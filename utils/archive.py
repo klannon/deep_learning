@@ -7,6 +7,7 @@ import numpy as np
 import deep_learning.utils.dataset as ds
 import deep_learning.utils.transformations as tr
 from deep_learning.utils import verify_angle
+import deep_learning.utils.misc as misc
 
 def read_config_file(dataset_name, format):
     """ Reads a json file containing the locations of train/test data
@@ -152,3 +153,40 @@ def create_archive(dataset_name, format):
     output_path = os.path.join(ds.get_path_to_dataset(dataset_name), ("%s.npz" % format))
     np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
 
+def equalize(dataset):
+    data, format = dataset.split('/')
+    x_train, y_train, x_test, y_test = ds.load_dataset(data, format)
+    total_background = int(y_train[:,0].sum()+y_test[:,0].sum())
+    total_signal = int(y_train[:,1].sum()+y_test[:,1].sum())
+
+    ix = np.random.choice(total_signal, total_signal-total_background, replace=False)
+
+    all_x_signal = np.concatenate((x_train[y_train[:,1]==1], x_test[y_test[:,1]==1]))
+    all_y_signal = np.concatenate((y_train[y_train[:,1]==1], y_test[y_test[:,1]==1]))
+    all_x_background = np.concatenate((x_train[y_train[:,0]==1], x_test[y_test[:,0]==1]))
+    all_y_background = np.concatenate((y_train[y_train[:,0]==1], y_test[y_test[:,0]==1]))
+
+    small_x_signal = np.delete(all_x_signal, ix, axis=0)
+    small_y_signal = np.delete(all_y_signal, ix, axis=0)
+
+    all_x = np.concatenate((all_x_background, small_x_signal))
+    all_y = np.concatenate((all_y_background, small_y_signal))
+
+    tr.shuffle_in_unison(all_x, all_y)
+
+    cutoff = int(all_x.shape[0] * 0.8)  # 80% training 20% testing
+    train_x = all_x[:cutoff]
+    train_y = all_y[:cutoff]
+    test_x = all_x[cutoff:]
+    test_y = all_y[cutoff:]
+
+    output_path = os.path.join(ds.get_path_to_dataset(data), "equalized_{}.npz".format(format))
+    np.savez(output_path, x_train=train_x, x_test=test_x, y_train=train_y, y_test=test_y)
+
+def save_ratios(dataset, nums=[]):
+    nums = [2,1,1] if not nums else nums
+    data, format = dataset.split('/')
+    datasets = misc.splitter(dataset, nums)
+    for i, (x_train, y_train, x_test, y_test) in enumerate(datasets):
+        output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}to{}.npz".format(format, nums[i], nums[-i-1]))
+        np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)

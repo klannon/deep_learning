@@ -5,7 +5,7 @@ import datetime, os, sys, time, argparse
 from keras.layers import Dense, Dropout, Input
 from keras.models import Sequential, model_from_json
 from keras.optimizers import Adam
-from keras.regularizers import l1
+from keras.regularizers import l1, l2
 
 import deep_learning.protobuf as pb
 import deep_learning.utils.dataset as ds
@@ -14,6 +14,9 @@ from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
 import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
+import deep_learning.utils.misc as misc
+import deep_learning.utils.graphs as gr
+import matplotlib.pyplot as plt
 from math import ceil
 from time import clock
 import numpy as np
@@ -43,13 +46,21 @@ def build(config=None):
     ##
     # Experiment log set-up
     ##
-
     exp = pb.Experiment()
     exp.start_date_time = str(datetime.datetime.now())
     exp.dataset = pb.Experiment.Dataset.Value(config["dataset"])
     exp.coordinates = config["coords"]
     exp.batch_size = config["batch_size"]
-    exp.description = config["save_name"] if config["save_name"] else ''
+    ##
+    # Creates a name based on the host machine name or PID if no custom name is given.
+    # Uses hexadecimal representation of time to shorten file name (with x as the decimal point)
+    ##
+    if config["save_name"]:
+        exp.description = config["save_name"]
+    else:
+        exp.description = "{}_{}".format(str(os.getenv("HOST",
+                                                       os.getpid())).split('.')[0],
+                                         'x'.join(map(lambda x: hex(int(x))[2:], str(time.time()).split('.'))))
 
     ##
     # Construct the network
@@ -63,7 +74,7 @@ def build(config=None):
     layer.output_dimension = config["nodes"]
 
     model.add(Dense(config["nodes"], input_dim=44, activation="relu"))#, W_regularizer=l1(0.001)))
-    #model.add(Dropout(0.5))
+    #model.add(Dropout(0.2))
 
     for l in xrange(config["layers"]-1):
         layer = exp.structure.add()
@@ -71,7 +82,7 @@ def build(config=None):
         layer.input_dimension = config["nodes"]
         layer.output_dimension = config["nodes"]
         model.add(Dense(config["nodes"], activation="relu"))#, W_regularizer=l1(0.001)))
-    #    model.add(Dropout(0.5))
+    #    model.add(Dropout(0.2))
 
     layer = exp.structure.add()
     layer.type = 1
@@ -103,32 +114,25 @@ def build(config=None):
 
 
 
-def run(model, exp, terms, save_freq=5):
+def run(model, exp, terms, save_freq=5, data=None):
 
     exp_dir = ds.get_path_to_dataset(pb.Experiment.Dataset.Name(exp.dataset))
-
-    ##
-    # Creates a name based on the host machine name or PID if no custom name is given.
-    # Uses hexadecimal representation of time to shorten file name (with x as the decimal point)
-    ##
-
-    if exp.description:
-        output_file_name = exp.description
-    else:
-        output_file_name = ("{}_{}".format(str(os.getenv("HOST", os.getpid())).split('.')[0],
-                                           'x'.join(map(lambda x: hex(int(x))[2:], str(time.time()).split('.')))))
-    save_dir = os.path.join(exp_dir, output_file_name)
-    exp_file_name = "{}.exp".format(output_file_name)
+    save_dir = os.path.join(exp_dir, exp.description)
 
     ##
     # Load data from .npz archive created by invoking
     # deep_learning/utils/archive.py
     ##
 
-    x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
-    x_train, x_test = tr.transform(x_train, x_test)
-    data = x_train, y_train, x_test, y_test
+    if data:
+        x_train, y_train, x_test, y_test = data
+        x_train, x_test = tr.transform(x_train, x_test)
+    else:
+        x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
+        x_train, x_test = tr.transform(x_train, x_test)
+        data = x_train, y_train, x_test, y_test
 
+    exp_file_name = exp.description + '.exp'
 
     train_length = x_train.shape[0]
     num_batches = int(ceil(train_length / exp.batch_size))
@@ -192,9 +196,9 @@ def run(model, exp, terms, save_freq=5):
     print("\n"+valid.failed)
     print("Total Time: {}".format(convert_seconds(valid.time)))
 
-    save(model, exp, save_dir, exp_file_name)
+    save(model, exp, save_dir, exp_file_name, graph=True)
 
-def save(model, exp, save_dir, exp_file_name):
+def save(model, exp, save_dir, exp_file_name, graph=False):
     ##
     # Save the model configuration, weights, and experiment object
     ##
@@ -212,6 +216,15 @@ def save(model, exp, save_dir, exp_file_name):
 
     w = model.get_weights()
     np.save("weights", w)
+
+    if graph:
+        gr.s_b(exp)
+        gr.auc(exp)
+        gr.correct(exp)
+        gr.accuracy(exp)
+        plt.tight_layout()
+        plt.savefig("{}{}{}.png".format(save_dir, os.sep, exp.description), format="png")
+        plt.clf()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -249,6 +262,7 @@ if __name__ == "__main__":
     parser.add_argument("-y", "--rise", help="the percentile increase in accuracy that you expect over this interval",
                         type=lambda y: float(y) if y.isdigit() else float(y[:-1])/100, default=None)
     parser.add_argument("--config", help="train based upon a .cfg file", default=None)
+    #parser.add_argument("--split", help="split into three experiments: 2 to 1, 1 to 1, 1 to 2", action="store_true")
     parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())
     args["dataset"], args["coords"] = args["dataset"].split('/')
@@ -265,13 +279,23 @@ if __name__ == "__main__":
                     run=None,
                     rise=None,
                     config=None,
+                    split=False,
                     defaults=False)
 
     for k,v in args.items():
         if not v:
             args[k] = defaults[k]
-    model, exp, terms = build(args)
 
+    #if args["split"]:
+    #    ratios = [2,1,1]
+    #    name = args["save_name"]
+    #    data = misc.splitter(args["dataset"], args["coords"])
+    #    for i in xrange(3):
+    #        args["save_name"] = name+"_{}to{}".format(ratios[i], ratios[-i-1])
+    #        model, exp, terms = build(args)
+    #        run(model, exp, terms, args["save_freq"], data=data[i])
+    #else:
+    model, exp, terms = build(args)
     run(model, exp, terms, args["save_freq"])
 
 
@@ -320,13 +344,17 @@ save models
 
 shuffling and normalizing each batch
 
+Try regularizations
+
+    Try to reduce information given to network (e.g. take out a few jets, or leave only the "top" few, or both leptons,
+                                                could look through the file and divide them into n-non-null jets and
+                                                see if it was just counting)
+    Plot BDT vs Network output curve to see if they think similarly
+
 PREPROCESSING STEPS:
 ---> Update .json file
 ---> Organize the files into one file or train + test files
 ---> Call utils.archive.create_archive with the appropriate arguments
 ---> Should be good to go!
 
-FOR COLIN:
-    WORK ON DASHBOARD
-    TRY TENSORFLOW
 """

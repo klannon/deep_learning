@@ -141,6 +141,6 @@ def get_experiments_from_dataset(dataset_name):
 
 def load_dataset(dataset_name, format):
     dataset_path = get_path_to_dataset(dataset_name, format)
-    data = np.load(dataset_path) # SHUFFLE?
+    data = np.load(dataset_path)
     return(data['x_train'], data['y_train'], data['x_test'], data['y_test'])
 

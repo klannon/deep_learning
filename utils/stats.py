@@ -12,13 +12,16 @@ TTHIGGS_X_SECTION = 212  # fb
 TTHIGGS_GENERATED = 3991615
 TTBAR_X_SECTION = 365399  # fb
 TTBAR_GENERATED = 353216236
+BACKGROUND_SAMPLE = 25811
+SIGNAL_SAMPLE = 42374
+SAMPLES = (BACKGROUND_SAMPLE, SIGNAL_SAMPLE)
 
 MATRIX = """
 {0}      Predicted
 {0}   ==================
-{0}R  || {1:.1f} || {2:.1f} || TTBar
+{0}R  || {1:02.1f} || {2:02.1f} || TTBar
 {0}e  ==================
-{0}a  || {3:.1f} || {4:.1f} || TTHiggs
+{0}a  || {3:02.1f} || {4:02.1f} || TTHiggs
 {0}l  ==================
 {0}     TTBar   TTHiggs
 """
@@ -41,16 +44,15 @@ def num_of_each_cell(model, data, cutoff=0.5):
                      [sb, ss]])
 
 # Need to generalize for more categories
-def efficiencies(model, data, cutoff=0.5):
+def efficiencies(model, data, cutoff=0.5, over_rows=True, **kwargs):
     matrix = num_of_each_cell(model, data, cutoff)
-    return np.array(map(lambda row: [x / sum(row) for x in row], matrix))
+    rval = np.array(map(lambda row: [x / sum(row) for x in row], matrix if over_rows else matrix.T))
+    return rval if over_rows else rval.T
 
 # Need to generalize for more categories
 def significance(model, data):
-    x_train, y_train, x_test, y_test = data
     efficiency = efficiencies(model, data)[:,1]  # bs, ss
-    total = [c.sum() + d.sum() for c, d in zip(y_test.T, y_train.T)]  # total bkgd, total signal
-    z = zip(efficiency, total,
+    z = zip(efficiency, SAMPLES,
             [LUMINOSITY * TTBAR_X_SECTION / TTBAR_GENERATED, LUMINOSITY * TTHIGGS_X_SECTION / TTHIGGS_GENERATED])
     predictions = [p * t * c for p, t, c in z]  # Percent, total, Constant
     return predictions[1] / sqrt(predictions[0])
@@ -72,14 +74,13 @@ def AUC(model, data, datapoints=20, save=False, experiment_epoch=None):
         plt.plot(e_b, e_s)
         plt.title("Efficiency Curve")
         plt.ylabel("Signal Efficiency")
-        plt.xlabel("Background Efficiency")
-        plt.xlabel("Background Efficiency")
+        plt.xlabel("Background Inefficiency")
         plt.savefig("AUC.png", format="png")
     return trapz(e_s,e_b)
 
 # ""
-def confusion_matrix(model, data, offset=''):
-    eff = efficiencies(model, data)
+def confusion_matrix(model, data, offset='', **kwargs):
+    eff = efficiencies(model, data, **kwargs)
     return MATRIX.format(offset, *(eff*100).flatten())
 
 
@@ -90,5 +91,6 @@ if __name__ == "__main__":
     x_train, x_test = tr.transform(x_train, x_test)
     data = (x_train, y_train, x_test, y_test)
     print significance(model, data)
-    print AUC(model, data, save=True)
+    print AUC(model, data)
     print confusion_matrix(model, data)
+    print confusion_matrix(model, data, over_rows=False)
