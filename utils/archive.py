@@ -183,10 +183,44 @@ def equalize(dataset):
     output_path = os.path.join(ds.get_path_to_dataset(data), "equalized_{}.npz".format(format))
     np.savez(output_path, x_train=train_x, x_test=test_x, y_train=train_y, y_test=test_y)
 
-def save_ratios(dataset, nums=[]):
+def save_ratios(dataset, nums=None):
     nums = [2,1,1] if not nums else nums
     data, format = dataset.split('/')
     datasets = misc.splitter(dataset, nums)
     for i, (x_train, y_train, x_test, y_test) in enumerate(datasets):
         output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}to{}.npz".format(format, nums[i], nums[-i-1]))
         np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
+
+def save_by_jet_num(dataset, num_jets):
+    data, format = dataset.split('/')
+    x_train, y_train, x_test, y_test = ds.load_dataset(data, format)
+    if num_jets.endswith("+"):
+        val = lambda x: x >= int(num_jets[:-1])
+    elif num_jets.endswith("-"):
+        val = lambda x: x <= int(num_jets[:-1])
+    else:
+        val = lambda x: x == int(num_jets)
+    all_x = np.concatenate((x_train, x_test), axis=0)
+    all_y = np.concatenate((y_train, y_test), axis=0)
+    nulls = np.zeros((all_x.shape[0], all_x.shape[1]/4), dtype=np.bool)
+    for y in xrange(all_x.shape[1]/4):
+        for ix, row in enumerate((x_train > 0)[:, y*4:(y+1)*4]):
+            nulls[ix, y] = all(row == 0)
+    events_with_x_jets = val(np.array([row[:-2].sum() for row in ~nulls]))
+
+    all_x, all_y = all_x[events_with_x_jets], all_y[events_with_x_jets]
+    tr.shuffle_in_unison(all_x, all_y)
+
+    cutoff = int(all_x.shape[0] * 0.8)  # 80% training 20% testing
+    train_x = all_x[:cutoff]
+    train_y = all_y[:cutoff]
+    test_x = all_x[cutoff:]
+    test_y = all_y[cutoff:]
+
+    output_path = os.path.join(ds.get_path_to_dataset(data), "{}jets_{}.npz".format(num_jets, format))
+    np.savez(output_path, x_train=train_x, x_test=test_x, y_train=train_y, y_test=test_y)
+
+if __name__ == "__main__":
+    #save_by_jet_num('ttHLep/Unsorted', "5-")
+    #save_ratios("ttHLep/5-jets_Unsorted", [1,])
+    pass

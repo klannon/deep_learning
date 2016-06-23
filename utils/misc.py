@@ -13,8 +13,8 @@ def splitter(dataset, ratios):
 
     datasets = []
 
-    for i in xrange(ratios):
-        denom = sum(ratios[i], ratios[-i-1])
+    for i in xrange(len(ratios)):
+        denom = sum((ratios[i], ratios[-i-1]))
         back_ix = np.random.choice(total_background, total_background-(int((ratios[i] / denom) * UPPER_LIMIT)), replace=False)
         sig_ix = np.random.choice(total_signal, total_signal-(int((ratios[-i-1] / denom) * UPPER_LIMIT)), replace=False)
 
@@ -33,7 +33,7 @@ def splitter(dataset, ratios):
 
         tr.shuffle_in_unison(all_x, all_y)
 
-        cutoff = int(all_x.shape[0] * 0.85)  # 80% training 20% testing
+        cutoff = int(all_x.shape[0] * 0.80)  # 80% training 20% testing
         train_x = all_x[:cutoff]
         train_y = all_y[:cutoff]
         test_x = all_x[cutoff:]

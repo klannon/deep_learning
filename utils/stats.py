@@ -27,7 +27,7 @@ MATRIX = """
 """
 
 def count_filter(model, criteria, (x_test, y_test), **kwargs):
-    predictions = model.predict(x_test, **kwargs)
+    predictions = model.predict([x_test], **kwargs)
     bArray = criteria(predictions, y_test)
     return tuple([c.sum() for c in bArray.T])
 
@@ -50,15 +50,20 @@ def efficiencies(model, data, cutoff=0.5, over_rows=True, **kwargs):
     return rval if over_rows else rval.T
 
 # Need to generalize for more categories
-def significance(model, data):
-    efficiency = efficiencies(model, data)[:,1]  # bs, ss
-    z = zip(efficiency, SAMPLES,
-            [LUMINOSITY * TTBAR_X_SECTION / TTBAR_GENERATED, LUMINOSITY * TTHIGGS_X_SECTION / TTHIGGS_GENERATED])
-    predictions = [p * t * c for p, t, c in z]  # Percent, total, Constant
+def significance(model, data, override=None):
+    if override:
+        z = zip(override, SAMPLES,
+                [LUMINOSITY * TTBAR_X_SECTION / TTBAR_GENERATED, LUMINOSITY * TTHIGGS_X_SECTION / TTHIGGS_GENERATED])
+        predictions = [p * t * c for p, t, c in z]  # Percent, total, Constant
+    else:
+        efficiency = efficiencies(model, data)[:,1]  # bs, ss
+        z = zip(efficiency, SAMPLES,
+                [LUMINOSITY * TTBAR_X_SECTION / TTBAR_GENERATED, LUMINOSITY * TTHIGGS_X_SECTION / TTHIGGS_GENERATED])
+        predictions = [p * t * c for p, t, c in z]  # Percent, total, Constant
     return predictions[1] / sqrt(predictions[0])
 
 # ""
-def AUC(model, data, datapoints=20, save=False, experiment_epoch=None):
+def AUC(model, data, datapoints=20, save='', experiment_epoch=None):
     datapoints += 1
     e_b = np.zeros(datapoints)
     e_s = np.zeros(datapoints)
@@ -75,7 +80,7 @@ def AUC(model, data, datapoints=20, save=False, experiment_epoch=None):
         plt.title("Efficiency Curve")
         plt.ylabel("Signal Efficiency")
         plt.xlabel("Background Inefficiency")
-        plt.savefig("AUC.png", format="png")
+        plt.savefig(save, format="png")
     return trapz(e_s,e_b)
 
 # ""

@@ -73,7 +73,7 @@ def build(config=None):
     layer.input_dimension = 44
     layer.output_dimension = config["nodes"]
 
-    model.add(Dense(config["nodes"], input_dim=44, activation="relu"))#, W_regularizer=l1(0.001)))
+    model.add(Dense(config["nodes"], input_dim=44, activation="relu", W_regularizer=l1(0.001)))
     #model.add(Dropout(0.2))
 
     for l in xrange(config["layers"]-1):
@@ -81,7 +81,7 @@ def build(config=None):
         layer.type = 0
         layer.input_dimension = config["nodes"]
         layer.output_dimension = config["nodes"]
-        model.add(Dense(config["nodes"], activation="relu"))#, W_regularizer=l1(0.001)))
+        model.add(Dense(config["nodes"], activation="relu", W_regularizer=l1(0.001)))
     #    model.add(Dropout(0.2))
 
     layer = exp.structure.add()
@@ -262,7 +262,6 @@ if __name__ == "__main__":
     parser.add_argument("-y", "--rise", help="the percentile increase in accuracy that you expect over this interval",
                         type=lambda y: float(y) if y.isdigit() else float(y[:-1])/100, default=None)
     parser.add_argument("--config", help="train based upon a .cfg file", default=None)
-    #parser.add_argument("--split", help="split into three experiments: 2 to 1, 1 to 1, 1 to 2", action="store_true")
     parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())
     args["dataset"], args["coords"] = args["dataset"].split('/')
@@ -286,15 +285,6 @@ if __name__ == "__main__":
         if not v:
             args[k] = defaults[k]
 
-    #if args["split"]:
-    #    ratios = [2,1,1]
-    #    name = args["save_name"]
-    #    data = misc.splitter(args["dataset"], args["coords"])
-    #    for i in xrange(3):
-    #        args["save_name"] = name+"_{}to{}".format(ratios[i], ratios[-i-1])
-    #        model, exp, terms = build(args)
-    #        run(model, exp, terms, args["save_freq"], data=data[i])
-    #else:
     model, exp, terms = build(args)
     run(model, exp, terms, args["save_freq"])
 
