@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import datetime, os, sys, time, argparse
 
-from keras.layers import Dense, Dropout, Input
+from keras.layers import Dense, Dropout, Input, Merge, merge
 from keras.models import Sequential, model_from_json
 from keras.optimizers import Adam
 from keras.regularizers import l1, l2
@@ -73,7 +73,7 @@ def build(config=None):
     layer.input_dimension = 44
     layer.output_dimension = config["nodes"]
 
-    model.add(Dense(config["nodes"], input_dim=44, activation="relu", W_regularizer=l1(0.001)))
+    model.add(Dense(config["nodes"], input_dim=44, activation="relu"))#, W_regularizer=l1(0.001)))
     #model.add(Dropout(0.2))
 
     for l in xrange(config["layers"]-1):
@@ -81,7 +81,7 @@ def build(config=None):
         layer.type = 0
         layer.input_dimension = config["nodes"]
         layer.output_dimension = config["nodes"]
-        model.add(Dense(config["nodes"], activation="relu", W_regularizer=l1(0.001)))
+        model.add(Dense(config["nodes"], activation="relu"))#, W_regularizer=l1(0.001)))
     #    model.add(Dropout(0.2))
 
     layer = exp.structure.add()
@@ -268,9 +268,9 @@ if __name__ == "__main__":
 
     defaults = dict(learning_rate=0.001,
                     batch_size=64,
-                    layers=5,
+                    layers=2,
                     max_epochs=None,
-                    nodes=50,
+                    nodes=20,
                     timeout=None,
                     monitor_fraction=0,
                     save_freq=5,
