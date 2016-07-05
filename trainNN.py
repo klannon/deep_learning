@@ -210,7 +210,6 @@ def build(config=None):
 
     ### SORTING NET
     inputs = [Input(shape=(44,), name="Event Input {}".format(i)) for i in xrange(len(perms))]
-    inputs = merge(len(perms)*[inputs])
     o = sorted_model(merge(inputs))
     """
     def clean_sorting_outputs(x):
@@ -308,7 +307,8 @@ def run(model, exp, terms, save_freq=5, data=None):
             # Train on a batch
             x_batch = x_train[b*exp.batch_size:b*exp.batch_size+exp.batch_size, :]
             # Pre-train permutations and sorting
-            sort_batch_x = np.zeros((x_batch.shape[0]*len(perms), x_batch.shape[1]))
+            inputs = [np.zeros(x_batch.shape) for i in xrange(len(perms))]
+            #sort_batch_x = np.zeros((x_batch.shape[0], len(perms), x_batch.shape[1]))
             sort_batch_y = np.zeros((x_batch.shape[0], len(perms)))
             sort_batch_y[:, 0] = [1]*x_batch.shape[0]
             for i, b in enumerate(x_batch):
@@ -317,10 +317,11 @@ def run(model, exp, terms, save_freq=5, data=None):
                     event[j] = np.dot(b, E(p))
                 arange = np.arange(len(perms))
                 np.random.shuffle(arange)
-                sort_batch_x[i*len(perms):(i+1)*len(perms)] = event[arange]
+                for k, e in enumerate(event[arange]):
+                    inputs[k][i] = e
                 sort_batch_y[i] = sort_batch_y[i][arange]
 
-            model.train_on_batch(sort_batch_x, sort_batch_y)
+            model.train_on_batch(inputs, sort_batch_y)
             bTimes = np.append(bTimes, clock()-bt)
             bETA = np.median(bTimes)*(num_batches-b-1)
         # Finish progress bar
