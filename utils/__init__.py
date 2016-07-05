@@ -2,6 +2,7 @@ from __future__ import division, print_function
 from os import fstat
 import tempfile, csv
 from math import pi
+import numpy as np
 
 
 def which(myDict):
@@ -54,3 +55,33 @@ def verify_angle(angle):
         while angle < -pi:
             angle += 2*pi
     return angle
+
+def E(indices, step=4):
+    dim = len(indices)*step
+    I = np.zeros((dim,dim))
+    for row, col in zip(xrange(len(indices)), indices):
+        mask = I[step*row:step*(row+1), step*col:step*(col+1)]
+        np.fill_diagonal(mask, 1)
+    return I
+
+def gen_permutations(num_b_jets, num_jets, num_leptons):
+    _leps = set(range(num_leptons))
+    _bjets = set(range(num_b_jets))
+    _jets = list(range(num_jets))
+    for l_1 in _leps:
+        l_2 = tuple(_leps - {l_1,})[0]
+        for b_1 in _bjets:
+            b_2 = tuple(_bjets - {b_1,})[0]
+            for j1_1 in _jets:
+                for j1_2 in _jets[_jets.index(j1_1)+1:]:
+                    remains_5 = list(set(_jets) - {j1_1, j1_2})
+                    for j2_1 in remains_5:
+                        for j2_2 in remains_5[remains_5.index(j2_1)+1:]:
+                            remains_3 = sorted(list(set(remains_5) - {j2_1, j2_2}))
+                            yield [b_1,
+                                   b_2,
+                                   j1_1+2,
+                                   j1_2+2,
+                                   j2_1+2,
+                                   j2_2+2]+map(lambda j: j+2, remains_3)+[l_1+9,
+                                   l_2+9]

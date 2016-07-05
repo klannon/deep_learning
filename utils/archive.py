@@ -8,6 +8,7 @@ import deep_learning.utils.dataset as ds
 import deep_learning.utils.transformations as tr
 from deep_learning.utils import verify_angle
 import deep_learning.utils.misc as misc
+from deep_learning.utils import gen_permutations, E
 
 def read_config_file(dataset_name, format):
     """ Reads a json file containing the locations of train/test data
@@ -219,6 +220,49 @@ def save_by_jet_num(dataset, num_jets):
 
     output_path = os.path.join(ds.get_path_to_dataset(data), "{}jets_{}.npz".format(num_jets, format))
     np.savez(output_path, x_train=train_x, x_test=test_x, y_train=train_y, y_test=test_y)
+
+def permutate_sorted(dataset):
+    """ Only use this for sorted data! Also, this takes up a significant amount of RAM """
+    data, format = dataset.split('/')
+    x_train, y_train, x_test, y_test = ds.load_dataset(data, format)
+
+    # Generate permutations, transforms, and alter the dataset
+    perms = list(gen_permutations(2, 7, 2))
+    num_perms = len(perms)
+    transforms = np.zeros((44, 44 * num_perms))
+    for i, p in enumerate(perms):
+        transforms[:, i * 44:(i + 1) * 44] = E(p)
+
+    # For the training data
+    sorted_train_x = np.zeros((x_train.shape[0] * num_perms, x_train.shape[1]))
+    sorted_train_y = np.zeros((sorted_train_x.shape[0], 2))
+
+    for i, batch in enumerate(x_train):
+        labels = np.concatenate((np.ones((num_perms,)).reshape((num_perms, 1)),
+                                 np.zeros((num_perms,)).reshape((num_perms, 1))), axis=1)
+        labels[0] = [0, 1]
+        event = np.dot(batch, transforms).reshape((num_perms, x_train.shape[1]))
+        arange = np.arange(num_perms)
+        np.random.shuffle(arange)
+        sorted_train_x[i * num_perms:(i + 1) * num_perms] = event[arange]
+        sorted_train_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
+
+    # For the testing data
+    sorted_test_x = np.zeros((x_test.shape[0] * num_perms, x_test.shape[1]))
+    sorted_test_y = np.zeros((sorted_test_x.shape[0], 2))
+
+    for i, batch in enumerate(x_test):
+        labels = np.concatenate((np.ones((num_perms,)).reshape((num_perms, 1)),
+                                 np.zeros((num_perms,)).reshape((num_perms, 1))), axis=1)
+        labels[0] = [0, 1]
+        event = np.dot(batch, transforms).reshape((num_perms, x_test.shape[1]))
+        arange = np.arange(num_perms)
+        np.random.shuffle(arange)
+        sorted_test_x[i * num_perms:(i + 1) * num_perms] = event[arange]
+        sorted_test_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
+
+    output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}.npz".format(format, "Permutated"))
+    np.savez(output_path, x_train=sorted_train_x, x_test=sorted_test_x, y_train=sorted_train_y, y_test=sorted_test_y)
 
 if __name__ == "__main__":
     #save_by_jet_num('ttHLep/Unsorted', "5-")

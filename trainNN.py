@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 from math import ceil
 from time import clock
 import numpy as np
+from deep_learning.utils import E
 #from keras.utils.visualize_util import plot
 
 """
@@ -46,36 +47,6 @@ def load_model(exp_name):
         model = model_from_json(json.read())
     model.set_weights(np.load(exp_dir+"weights.npy"))
     return model
-
-def E(indices, step=4):
-    dim = len(indices)*step
-    I = np.zeros((dim,dim))
-    for row, col in zip(xrange(len(indices)), indices):
-        mask = I[step*row:step*(row+1), step*col:step*(col+1)]
-        np.fill_diagonal(mask, 1)
-    return I
-
-def gen_permutations(num_b_jets, num_jets, num_leptons):
-    _leps = set(range(num_leptons))
-    _bjets = set(range(num_b_jets))
-    _jets = list(range(num_jets))
-    for l_1 in _leps:
-        l_2 = tuple(_leps - {l_1,})[0]
-        for b_1 in _bjets:
-            b_2 = tuple(_bjets - {b_1,})[0]
-            for j1_1 in _jets:
-                for j1_2 in _jets[_jets.index(j1_1)+1:]:
-                    remains_5 = list(set(_jets) - {j1_1, j1_2})
-                    for j2_1 in remains_5:
-                        for j2_2 in remains_5[remains_5.index(j2_1)+1:]:
-                            remains_3 = sorted(list(set(remains_5) - {j2_1, j2_2}))
-                            yield [b_1,
-                                   b_2,
-                                   j1_1+2,
-                                   j1_2+2,
-                                   j2_1+2,
-                                   j2_2+2]+map(lambda j: j+2, remains_3)+[l_1+9,
-                                   l_2+9]
 
 
 class Permute(Layer):
@@ -188,7 +159,7 @@ def build(config=None):
 
     ### SUPER NET
 
-    perms = list(gen_permutations(2,7,2))
+    #perms = list(gen_permutations(2,7,2))
     """
     def clean_outputs(x):
         #x = printing.Print("Batch ")(x)
@@ -209,10 +180,10 @@ def build(config=None):
     #sorted_model(Permute(44, perms, exp.batch_size, name="Permutator")(inputs))
 
     ### SORTING NET
-    inputs = [Input(shape=(44,), name="Event Input {}".format(i)) for i in xrange(len(perms))]
-    o = sorted_model(merge(inputs))
-    """
-    def clean_sorting_outputs(x):
+    #inputs = [Input(shape=(44,), name="Event Input {}".format(i)) for i in xrange(len(perms))]
+    o = sorted_model(inputs)
+
+    """def clean_sorting_outputs(x):
         skip = x.shape[0] // len(perms)
         out, _ = theano.scan(lambda b, x, skip: K.reshape(x[b*skip:(b+1)*skip], (1, x.shape[1] * len(perms))),
                              n_steps=skip,
@@ -224,7 +195,7 @@ def build(config=None):
                output_shape=lambda s: (exp.batch_size, 20 * len(perms)),
                name="Filter")(o)"""
 
-    o = Dense(len(perms), activation="softmax", name="Classifier (Softmax)")(o)
+    o = Dense(2, activation="softmax", name="Classifier (Softmax)")(o)
 
     ### SUPER-NET CLASSIFIER EXTENSION
     """
@@ -282,11 +253,12 @@ def run(model, exp, terms, save_freq=5, data=None):
 
     exp_file_name = exp.description + '.exp'
 
+    # Start training
+
     train_length = x_train.shape[0]
     num_batches = int(ceil(train_length / exp.batch_size))
 
     valid = Validator(exp, terms)
-    perms = list(gen_permutations(2, 7, 2))
 
     eTimes = np.array([])
     valid._clock = clock()
@@ -306,22 +278,8 @@ def run(model, exp, terms, save_freq=5, data=None):
             progress(b, num_batches, exp.batch_size, bETA)
             # Train on a batch
             x_batch = x_train[b*exp.batch_size:b*exp.batch_size+exp.batch_size, :]
-            # Pre-train permutations and sorting
-            inputs = [np.zeros(x_batch.shape) for i in xrange(len(perms))]
-            #sort_batch_x = np.zeros((x_batch.shape[0], len(perms), x_batch.shape[1]))
-            sort_batch_y = np.zeros((x_batch.shape[0], len(perms)))
-            sort_batch_y[:, 0] = [1]*x_batch.shape[0]
-            for i, b in enumerate(x_batch):
-                event = np.zeros((len(perms), x_batch.shape[1]))
-                for j, p in enumerate(perms):
-                    event[j] = np.dot(b, E(p))
-                arange = np.arange(len(perms))
-                np.random.shuffle(arange)
-                for k, e in enumerate(event[arange]):
-                    inputs[k][i] = e
-                sort_batch_y[i] = sort_batch_y[i][arange]
-
-            model.train_on_batch(inputs, sort_batch_y)
+            y_batch = y_train[b*exp.batch_size:b*exp.batch_size+exp.batch_size, :]
+            model.train_on_batch(x_batch, y_batch)
             bTimes = np.append(bTimes, clock()-bt)
             bETA = np.median(bTimes)*(num_batches-b-1)
         # Finish progress bar
