@@ -25,6 +25,7 @@ import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
 import deep_learning.utils.misc as misc
 import deep_learning.utils.graphs as gr
+import deep_learning.utils.archive as ar
 import matplotlib.pyplot as plt
 from math import ceil
 from time import clock
@@ -57,7 +58,7 @@ class Permute(Layer):
         self.batch_size = batch_size
         #self.labels = T.zeros((1, self.num_p))
 
-        def _get_labels(x, labels, num_p):
+        """def _get_labels(x, labels, num_p):
             skip = x.shape[0] // num_p
             srng = RandomStreams()
             self.indices = srng.permutation(n=num_p, size=(1,))[0]
@@ -69,10 +70,10 @@ class Permute(Layer):
                         n_steps=self.num_p,
                         sequences=[T.arange(self.num_p)],
                         non_sequences=[identity, skip])
-            return T.dot(labels, identity)
-        x = T.dmatrix()
-        labels = T.imatrix()
-        self.get_labels = function([self, x, labels], _get_labels)
+            return T.dot(labels, identity)"""
+        #x = T.dmatrix()
+        #labels = T.imatrix()
+        #self.get_labels = function([self, x, labels], _get_labels)
 
         super(Permute, self).__init__(**kwargs)
 
@@ -82,6 +83,9 @@ class Permute(Layer):
         self.trainable = False
 
     def call(self, x, mask=None):
+        srng = RandomStreams()
+        self.indices = srng.permutation(n=self.num_p, size=(1,))[0]
+
         skip = x.shape[0] // self.num_p
 
         rval = K.concatenate([K.dot(x, self.T[i].transpose()) for i in xrange(self.num_p)], axis=0)
@@ -102,33 +106,9 @@ class Permute(Layer):
     def compute_mask(self, input, input_mask=None):
         return None
 
-
-def build(config=None):
-
-    if config is None:
-        config = set_configurations()
+### OLD MODEL
+def build_default(config, exp):
     ##
-    # Experiment log set-up
-    ##
-    exp = pb.Experiment()
-    exp.start_date_time = str(datetime.datetime.now())
-    exp.dataset = pb.Experiment.Dataset.Value(config["dataset"])
-    exp.coordinates = config["coords"]
-    exp.batch_size = config["batch_size"]
-    ##
-    # Creates a name based on the host machine name or PID if no custom name is given.
-    # Uses hexadecimal representation of time to shorten file name (with x as the decimal point)
-    ##
-    if config["save_name"]:
-        exp.description = config["save_name"]
-    else:
-        exp.description = "{}_{}".format(str(os.getenv("HOST",
-                                                       os.getpid())).split('.')[0],
-                                         'x'.join(map(lambda x: hex(int(x))[2:], str(time.time()).split('.'))))
-
-
-    ### OLD MODEL
-    """"##
     # Construct the network
     ##
 
@@ -154,21 +134,51 @@ def build(config=None):
     layer.type = 1
     layer.input_dimension = config["nodes"]
     layer.output_dimension = 2
-    model.add(Dense(output_dim=2, activation="softmax"))"""
+    model.add(Dense(output_dim=2, activation="softmax"))
 
+    return model
+
+### SORTING NET
+#inputs = [Input(shape=(44,), name="Event Input {}".format(i)) for i in xrange(len(perms))]
+
+"""def clean_sorting_outputs(x):
+    skip = x.shape[0] // len(perms)
+    out, _ = theano.scan(lambda b, x, skip: K.reshape(x[b*skip:(b+1)*skip], (1, x.shape[1] * len(perms))),
+                         n_steps=skip,
+                         sequences=[T.arange(skip)],
+                         non_sequences=[x, skip])
+    return T.flatten(out, outdim=2)
+
+o = Lambda(clean_sorting_outputs,
+           output_shape=lambda s: (exp.batch_size, 20 * len(perms)),
+           name="Filter")(o)"""
+
+def build_sorting_net(config, exp):
+    inputs = Input(shape=(44,), name="Event Input")
+    extended_net = Sequential(name="ReLu Network")
+    extended_net.add(Dense(50, input_dim=44, activation="relu", W_regularizer=l1(0.001)))
+    extended_net.add(Dense(50, activation="relu", W_regularizer=l1(0.001)))
+    extended_net.add(Dense(50, activation="relu", W_regularizer=l1(0.001)))
+    extended_net.add(Dense(50, activation="relu", W_regularizer=l1(0.001)))
+    extended_net.add(Dense(50, activation="relu", W_regularizer=l1(0.001)))
+    soft = Dense(2, activation="softmax", name="Classifier (Softmax)")
+    o = extended_net(inputs)
+    o = soft(o)
+
+    return Model(input=inputs, output=o)
+
+def build_supernet(config, exp):
 
     ### SUPER NET
+    perms = list(ar.gen_permutations(2,7,2))
 
-    #perms = list(gen_permutations(2,7,2))
-    """
     def clean_outputs(x):
-        #x = printing.Print("Batch ")(x)
         skip = x.shape[0] // len(perms)
         out, _ = theano.scan(lambda b, x, skip: K.reshape(x[b::skip], (1, x.shape[1] * len(perms))),
                              n_steps=skip,
                              sequences=[T.arange(skip)],
                              non_sequences=[x, skip])
-        return T.flatten(out, outdim=2)"""
+        return T.flatten(out, outdim=2)
 
     inputs = Input(shape=(44,), name="Event Input")
 
@@ -177,37 +187,51 @@ def build(config=None):
         layer.trainable = False
         sorted_model.add(layer)
         sorted_model.layers[ix].set_weights(layer.get_weights())
-    #sorted_model(Permute(44, perms, exp.batch_size, name="Permutator")(inputs))
 
-    ### SORTING NET
-    #inputs = [Input(shape=(44,), name="Event Input {}".format(i)) for i in xrange(len(perms))]
-    o = sorted_model(inputs)
+    o = sorted_model(Permute(44, perms, exp.batch_size, name="Permutator")(inputs))
 
-    """def clean_sorting_outputs(x):
-        skip = x.shape[0] // len(perms)
-        out, _ = theano.scan(lambda b, x, skip: K.reshape(x[b*skip:(b+1)*skip], (1, x.shape[1] * len(perms))),
-                             n_steps=skip,
-                             sequences=[T.arange(skip)],
-                             non_sequences=[x, skip])
-        return T.flatten(out, outdim=2)
-
-    o = Lambda(clean_sorting_outputs,
-               output_shape=lambda s: (exp.batch_size, 20 * len(perms)),
-               name="Filter")(o)"""
-
-    o = Dense(2, activation="softmax", name="Classifier (Softmax)")(o)
+    o = Lambda(clean_outputs,
+               output_shape=lambda s: (s[0] // len(perms), 20 * len(perms)),
+               name="Filter")(o)
 
     ### SUPER-NET CLASSIFIER EXTENSION
-    """
     extended_net = Sequential(name="ReLu Network")
     extended_net.add(Dense(20, input_dim=16800, activation="relu"))
     extended_net.add(Dense(20, activation="relu"))
     extended_net.add(Dense(20, activation="relu"))
+    extended_net.add(Dense(20, activation="relu"))
     soft = Dense(2, activation="softmax", name="Classifier (Softmax)")
 
-    o = soft(extended_net(o))"""
+    o = extended_net(o)
+    o = soft(o)
 
-    model = Model(input=inputs, output=o)
+    return Model(input=inputs, output=o)
+
+def build(config=None):
+
+    if config is None:
+        config = set_configurations()
+    ##
+    # Experiment log set-up
+    ##
+    exp = pb.Experiment()
+    exp.start_date_time = str(datetime.datetime.now())
+    exp.dataset = pb.Experiment.Dataset.Value(config["dataset"])
+    exp.coordinates = config["coords"]
+    exp.batch_size = config["batch_size"]
+    ##
+    # Creates a name based on the host machine name or PID if no custom name is given.
+    # Uses hexadecimal representation of time to shorten file name (with x as the decimal point)
+    ##
+    if config["save_name"]:
+        exp.description = config["save_name"]
+    else:
+        exp.description = "{}_{}".format(str(os.getenv("HOST",
+                                                       os.getpid())).split('.')[0],
+                                         'x'.join(map(lambda x: hex(int(x))[2:], str(time.time()).split('.'))))
+
+
+    model = build_supernet(config, exp)
 
     ##
     # Generate the optimization method

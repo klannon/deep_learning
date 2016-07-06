@@ -6,5 +6,13 @@
   "Unsorted": {
     "background": "background_unsorted.csv",
     "signal": "signal_unsorted.csv"
+  },
+  "Sorted_Large": {
+    "background": "ttjets_sorted_deeplearn.csv",
+    "signal": "ttH_sorted_deeplearn.csv"
+  },
+  "Unsorted_Large": {
+    "background": "ttjets_unsorted_deeplearn.csv",
+    "signal": "ttH_unsorted_deeplearn.csv"
   }
 }

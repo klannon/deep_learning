@@ -184,10 +184,10 @@ def equalize(dataset):
     output_path = os.path.join(ds.get_path_to_dataset(data), "equalized_{}.npz".format(format))
     np.savez(output_path, x_train=train_x, x_test=test_x, y_train=train_y, y_test=test_y)
 
-def save_ratios(dataset, nums=None):
+def save_ratios(dataset, nums=None, separate=False):
     nums = [2,1,1] if not nums else nums
     data, format = dataset.split('/')
-    datasets = misc.splitter(dataset, nums)
+    datasets = misc.splitter(dataset, nums, separate=separate)
     for i, (x_train, y_train, x_test, y_test) in enumerate(datasets):
         output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}to{}.npz".format(format, nums[i], nums[-i-1]))
         np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
@@ -237,10 +237,12 @@ def permutate_sorted(dataset):
     sorted_train_x = np.zeros((x_train.shape[0] * num_perms, x_train.shape[1]))
     sorted_train_y = np.zeros((sorted_train_x.shape[0], 2))
 
+    labels = np.concatenate((np.ones((num_perms,)).reshape((num_perms, 1)),
+                             np.zeros((num_perms,)).reshape((num_perms, 1))), axis=1)
+
+    labels[0] = [0, 1]
+
     for i, batch in enumerate(x_train):
-        labels = np.concatenate((np.ones((num_perms,)).reshape((num_perms, 1)),
-                                 np.zeros((num_perms,)).reshape((num_perms, 1))), axis=1)
-        labels[0] = [0, 1]
         event = np.dot(batch, transforms).reshape((num_perms, x_train.shape[1]))
         arange = np.arange(num_perms)
         np.random.shuffle(arange)
@@ -252,16 +254,58 @@ def permutate_sorted(dataset):
     sorted_test_y = np.zeros((sorted_test_x.shape[0], 2))
 
     for i, batch in enumerate(x_test):
-        labels = np.concatenate((np.ones((num_perms,)).reshape((num_perms, 1)),
-                                 np.zeros((num_perms,)).reshape((num_perms, 1))), axis=1)
-        labels[0] = [0, 1]
         event = np.dot(batch, transforms).reshape((num_perms, x_test.shape[1]))
         arange = np.arange(num_perms)
         np.random.shuffle(arange)
         sorted_test_x[i * num_perms:(i + 1) * num_perms] = event[arange]
         sorted_test_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
 
-    output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}.npz".format(format, "Permutated"))
+    output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}.npz".format(format, "Permuted"))
+    np.savez(output_path, x_train=sorted_train_x, x_test=sorted_test_x, y_train=sorted_train_y, y_test=sorted_test_y)
+
+# NOT FINALIZED
+def permutate_individual_sorted(dataset):
+    """ Only use this for sorted data! Also, this takes up a significant amount of RAM """
+    data, format = dataset.split('/')
+    x_train, y_train, x_test, y_test = ds.load_dataset(data, format)
+
+    # Generate permutations, transforms, and alter the dataset
+    perms = list(gen_permutations(2, 7, 2))
+    num_perms = len(perms)
+
+    aperms = np.array(perms)
+    labels = np.zeros(aperms.shape)
+    r = np.arange(11)
+    for i,p in enumerate(aperms):
+        labels[i] = (p == r).astype('int32')
+
+    transforms = np.zeros((44, 44 * num_perms))
+    for i, p in enumerate(perms):
+        transforms[:, i * 44:(i + 1) * 44] = E(p)
+
+    # For the training data
+    sorted_train_x = np.zeros((x_train.shape[0] * num_perms, x_train.shape[1]))
+    sorted_train_y = np.zeros((sorted_train_x.shape[0], 2))
+
+    for i, batch in enumerate(x_train):
+        event = np.dot(batch, transforms).reshape((num_perms, x_train.shape[1]))
+        arange = np.arange(num_perms)
+        np.random.shuffle(arange)
+        sorted_train_x[i * num_perms:(i + 1) * num_perms] = event[arange]
+        sorted_train_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
+
+    # For the testing data
+    sorted_test_x = np.zeros((x_test.shape[0] * num_perms, x_test.shape[1]))
+    sorted_test_y = np.zeros((sorted_test_x.shape[0], 2))
+
+    for i, batch in enumerate(x_test):
+        event = np.dot(batch, transforms).reshape((num_perms, x_test.shape[1]))
+        arange = np.arange(num_perms)
+        np.random.shuffle(arange)
+        sorted_test_x[i * num_perms:(i + 1) * num_perms] = event[arange]
+        sorted_test_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
+
+    output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}.npz".format(format, "Permuted"))
     np.savez(output_path, x_train=sorted_train_x, x_test=sorted_test_x, y_train=sorted_train_y, y_test=sorted_test_y)
 
 if __name__ == "__main__":
