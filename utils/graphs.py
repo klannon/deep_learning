@@ -69,6 +69,9 @@ def accuracy(experiment, label=None, subplot=224):
     #plt.show()
     #plt.savefig("accuracy.png", format="png")
 
+def permute_accuracy(model, data):
+    pass
+
 def roc_curve(experiment, label=None, subplot=None):
     exp = experiment
     label = label if label else exp.description

@@ -85,3 +85,20 @@ def gen_permutations(num_b_jets, num_jets, num_leptons):
                                    j2_1+2,
                                    j2_2+2]+map(lambda j: j+2, remains_3)+[l_1+9,
                                    l_2+9]
+
+def permute_event(event):
+    perms = list(gen_permutations(2, 7, 2))
+    num_perms = len(perms)
+    transforms = np.zeros((44, 44 * num_perms))
+    for i, p in enumerate(perms):
+        transforms[:, i * 44:(i + 1) * 44] = E(p)
+
+    labels = np.concatenate((np.ones((num_perms,)).reshape((num_perms, 1)),
+                             np.zeros((num_perms,)).reshape((num_perms, 1))), axis=1)
+
+    labels[0] = [0, 1]
+    permuted = np.dot(event, transforms).reshape((num_perms, event.size))
+    arange = np.arange(num_perms)
+    np.random.shuffle(arange)
+
+    return permuted[arange], labels[arange]
