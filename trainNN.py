@@ -128,7 +128,7 @@ def run(model, exp, terms, save_freq=5, data=None):
         x_train, y_train, x_test, y_test = data
         x_train, x_test = tr.transform(x_train, x_test)
     else:
-        x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
+        h_file, (x_train, y_train, x_test, y_test) = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
         x_train, x_test = tr.transform(x_train, x_test)
         data = x_train, y_train, x_test, y_test
 
@@ -163,8 +163,8 @@ def run(model, exp, terms, save_freq=5, data=None):
         progress(num_batches, num_batches, exp.batch_size, 0, end='\n')
         # Calculate stats and add the epoch results to the experiment object
         epoch = exp.results.add()
-        epoch.train_loss, epoch.train_accuracy = model.evaluate(x_train, y_train, batch_size=exp.batch_size, verbose=2)
-        epoch.test_loss, epoch.test_accuracy = model.evaluate(x_test, y_test, batch_size=exp.batch_size, verbose=2)
+        epoch.train_loss, epoch.train_accuracy = model.evaluate(x_train[:], y_train[:], batch_size=exp.batch_size, verbose=2)
+        epoch.test_loss, epoch.test_accuracy = model.evaluate(x_test[:], y_test[:], batch_size=exp.batch_size, verbose=2)
         epoch.s_b = st.significance(model, data)
         epoch.auc = st.AUC(model, data, experiment_epoch=epoch)
         for r in st.num_of_each_cell(model, data):

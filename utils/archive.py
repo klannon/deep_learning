@@ -2,11 +2,13 @@
 This module contains functions for loading data from and writing data
 to .npz files
 """
+from __future__ import division
 import json, math, os
 import numpy as np
+import tables
 import deep_learning.utils.dataset as ds
 import deep_learning.utils.transformations as tr
-from deep_learning.utils import verify_angle
+from deep_learning.utils import verify_angle, get_file_len_and_shape
 import deep_learning.utils.misc as misc
 
 def read_config_file(dataset_name, format):
@@ -58,7 +60,7 @@ def read_config_file(dataset_name, format):
         both_path = os.path.join(dataset_path, file_dict["both"])
         return dict(both=both_path)
 
-def make_one_hot(labels):
+def make_one_hot(labels, y_min=None, y_max=None):
     """ makes a one hot encoding of labels 
 
     Parameters
@@ -69,11 +71,16 @@ def make_one_hot(labels):
     -------
     labels_one_hot : one hot encoding of labels
     """
-    y_max = math.ceil(np.amax(labels))
-    y_min = math.floor(np.amin(labels))
+    if type(labels) is np.float32:
+        nrows = 1
+        labels = [labels]
+    else:
+        nrows = labels.shape[0]
+    y_max = y_max if type(y_max) is int else math.ceil(np.amax(labels))
+    y_min = y_min if type(y_min) is int else math.floor(np.amin(labels))
     num_classes = int((y_max - y_min) + 1)
-    labels_one_hot = np.zeros((labels.shape[0], num_classes))
-    for i in range(labels.shape[0]):
+    labels_one_hot = np.zeros((nrows, num_classes))
+    for i in xrange(nrows):
         class_index = labels[i] - y_min # where in the sequence of
         # classes (from y_min to y_max) labels[i] is
         labels_one_hot[i, class_index] = 1
@@ -97,7 +104,7 @@ def augment(dataset, format, shift_size):
     output_path = os.path.join(ds.get_path_to_dataset(dataset), "augmented_{}.npz".format(format))
     np.savez(output_path, x_train=augmented_x, x_test=x_test, y_train=augmented_y, y_test=y_test)
 
-def create_archive(dataset_name, format):
+def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
     """ converts a series of text files into a single .npz archive
     create_archive takes the name of a dataset and the
     format that the data is in, loads the config file
@@ -123,65 +130,86 @@ def create_archive(dataset_name, format):
     directory.
     """
     path_dict = read_config_file(dataset_name, format)
+    output_path = os.path.join(ds.get_path_to_dataset(dataset_name), "{}.hdf5".format(dataset_name))
+
     if "train_path" in path_dict:
-        train_raw = np.genfromtxt(path_dict["train_path"], delimiter=',', dtype="float32")
-        test_raw = np.genfromtxt(path_dict["test_path"], delimiter=',', dtype="float32")
+        train_len, train_cols = get_file_len_and_shape(path_dict["train_path"])
+        test_len, test_cols = get_file_len_and_shape(path_dict["test_path"])
+        assert train_cols == test_cols  # Train and test files should have the same data shape
+        h_file, h_data = add_group_hdf5(output_path, format, zip([train_len]*2+[test_len]*2, train_cols+test_cols))
+        with open(path_dict["train_path"]) as train_f:
+            for i, l in enumerate(train_f):
+                event = np.fromstring(l, sep=',', dtype="float32")
+                h_data[0][i] = event[1:]
+                h_data[1][i] = make_one_hot(event[0], 0, train_cols[1]-1)[0]
+        with open(path_dict["test_path"]) as test_f:
+            for i, l in enumerate(test_f):
+                event = np.fromstring(l, sep=',', dtype="float32")
+                h_data[2][i] = event[1:]
+                h_data[3][i] = make_one_hot(event[0], 0, test_cols[1]-1)[0]
+        #train_raw = np.genfromtxt(path_dict["train_path"], delimiter=',', dtype="float32")
+        #test_raw = np.genfromtxt(path_dict["test_path"], delimiter=',', dtype="float32")
     elif "background_path" in path_dict:
-        background = np.genfromtxt(path_dict["background_path"], delimiter=',', dtype="float32")
-        signal = np.genfromtxt(path_dict["signal_path"], delimiter=',', dtype="float32")
-        total = np.concatenate((background, signal), axis=0)
-        np.random.shuffle(total)
-        cutoff = int(total.shape[0]*0.8) # 80% training 20% testing
-        train_raw = total[:cutoff, :]
-        test_raw = total[cutoff:, :]
+        bkg_len, bkg_cols = get_file_len_and_shape(path_dict["background_path"])
+        sig_len, sig_cols = get_file_len_and_shape(path_dict["signal_path"])
+        n_labels = 2
+
+        total_len = bkg_len+sig_len
+        bkg_read_amt = int(bkg_len*buffer/total_len)
+        sig_read_amt = int(sig_len*buffer/total_len)
+        assert bkg_cols == sig_cols # Bkg and sig files should have the same data shape
+        h_file, h_data = add_group_hdf5(output_path,
+                                        format,
+                                        zip([round(total_len*train_fraction)] * 2 + [round(total_len*(1-train_fraction))] * 2,
+                                            [bkg_cols[0], n_labels]*2))
+        # Read in a buffer of 1000 lines at a time (allows fraction accuracy to 0.x5)
+        with open(path_dict["background_path"]) as bkg_f:
+            with open(path_dict["signal_path"]) as sig_f:
+                i = 0
+                while i < total_len - 1:
+                    x_buffer_array = np.zeros((buffer, bkg_cols[0]))
+                    y_buffer_array = np.zeros((buffer, n_labels))
+                    ix = 0
+                    for j in xrange(bkg_read_amt):
+                        line = bkg_f.readline()
+                        if line:
+                            event = np.fromstring(line, sep=',', dtype="float32")
+                            x_buffer_array[ix] = event[1:]
+                            y_buffer_array[ix] = make_one_hot(event[0], 0, n_labels - 1)[0]
+                            ix += 1
+                        else:
+                            break
+                    for k in xrange(sig_read_amt):
+                        line = sig_f.readline()
+                        if line:
+                            event = np.fromstring(line, sep=',', dtype="float32")
+                            x_buffer_array[ix] = event[1:]
+                            y_buffer_array[ix] = make_one_hot(event[0], 0, n_labels - 1)[0]
+                            ix += 1
+                        else:
+                            break
+                    indices = np.any(~(x_buffer_array==0), axis=1)
+                    x_buffer_array = x_buffer_array[indices]
+                    y_buffer_array = y_buffer_array[indices]
+                    tr.shuffle_in_unison(x_buffer_array, y_buffer_array)
+                    cutoff = int(x_buffer_array.shape[0]*train_fraction)
+                    for r in x_buffer_array[:cutoff]:
+                        h_data[0].append(r[None])
+                    for r in y_buffer_array[:cutoff]:
+                        h_data[1].append(r[None])
+                    for r in x_buffer_array[cutoff:]:
+                        h_data[2].append(r[None])
+                    for r in y_buffer_array[cutoff:]:
+                        h_data[3].append(r[None])
+                    i += ix
     elif "both" in path_dict:
         both = np.genfromtxt(path_dict["both"], delimiter=',', dtype="float32")
         np.random.shuffle(both)
         cutoff = int(both.shape[0] * 0.8)  # 80% training 20% testing
         train_raw = both[:cutoff, :]
         test_raw = both[cutoff:, :]
-
-
-    y_train = make_one_hot(train_raw[:, 0])
-    y_test = make_one_hot(test_raw[:, 0])
-
-    x_train = train_raw[:, 1:]
-    del train_raw
-    x_test = test_raw[:, 1:]
-    del test_raw
-
-    output_path = os.path.join(ds.get_path_to_dataset(dataset_name), ("%s.npz" % format))
-    np.savez(output_path, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test)
-
-def equalize(dataset):
-    data, format = dataset.split('/')
-    x_train, y_train, x_test, y_test = ds.load_dataset(data, format)
-    total_background = int(y_train[:,0].sum()+y_test[:,0].sum())
-    total_signal = int(y_train[:,1].sum()+y_test[:,1].sum())
-
-    ix = np.random.choice(total_signal, total_signal-total_background, replace=False)
-
-    all_x_signal = np.concatenate((x_train[y_train[:,1]==1], x_test[y_test[:,1]==1]))
-    all_y_signal = np.concatenate((y_train[y_train[:,1]==1], y_test[y_test[:,1]==1]))
-    all_x_background = np.concatenate((x_train[y_train[:,0]==1], x_test[y_test[:,0]==1]))
-    all_y_background = np.concatenate((y_train[y_train[:,0]==1], y_test[y_test[:,0]==1]))
-
-    small_x_signal = np.delete(all_x_signal, ix, axis=0)
-    small_y_signal = np.delete(all_y_signal, ix, axis=0)
-
-    all_x = np.concatenate((all_x_background, small_x_signal))
-    all_y = np.concatenate((all_y_background, small_y_signal))
-
-    tr.shuffle_in_unison(all_x, all_y)
-
-    cutoff = int(all_x.shape[0] * 0.8)  # 80% training 20% testing
-    train_x = all_x[:cutoff]
-    train_y = all_y[:cutoff]
-    test_x = all_x[cutoff:]
-    test_y = all_y[cutoff:]
-
-    output_path = os.path.join(ds.get_path_to_dataset(data), "equalized_{}.npz".format(format))
-    np.savez(output_path, x_train=train_x, x_test=test_x, y_train=train_y, y_test=test_y)
+    h_file.flush()
+    h_file.close()
 
 def save_ratios(dataset, nums=None):
     nums = [2,1,1] if not nums else nums
@@ -219,6 +247,20 @@ def save_by_jet_num(dataset, num_jets):
 
     output_path = os.path.join(ds.get_path_to_dataset(data), "{}jets_{}.npz".format(num_jets, format))
     np.savez(output_path, x_train=train_x, x_test=test_x, y_train=train_y, y_test=test_y)
+
+def add_group_hdf5(save_path, group, expected_shapes):
+    hdf5_file = tables.open_file(save_path, mode='a')
+    h_comp = tables.Filters(complevel=5, complib='blosc')
+    h_group = hdf5_file.create_group("/", group, group)
+    h_data = []
+    for k, shape in zip(["x_train", "y_train", "x_test", "y_test"], expected_shapes):
+        h_data.append(hdf5_file.create_earray(h_group, k,
+                                              tables.Float32Atom(),
+                                              shape=(0, shape[1]),
+                                              filters=h_comp,
+                                              expectedrows=shape[0]))
+    return hdf5_file, h_data
+
 
 if __name__ == "__main__":
     #save_by_jet_num('ttHLep/Unsorted', "5-")

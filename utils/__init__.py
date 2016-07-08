@@ -54,3 +54,12 @@ def verify_angle(angle):
         while angle < -pi:
             angle += 2*pi
     return angle
+
+def get_file_len_and_shape(fname, delim=','):
+    s = set()
+    with open(fname) as f:
+        for i, l in enumerate(csv.reader(f, delimiter=delim)):
+            if i == 0:
+                cols = len(l)-1
+            s.add(int(l[0]))
+    return i + 1, [cols, len(s)]

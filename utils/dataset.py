@@ -1,11 +1,11 @@
 import os
-import numpy as np
+import tables
 
 module_dir = os.path.dirname(os.path.realpath(__file__))
 
 def get_data_dir_path():
     """ Gets the absolute path to the data directory
-    
+
     Returns
     -------
     data_dir_path : absolute path to the data directory
@@ -24,11 +24,11 @@ def get_available_datasets():
     -------
     datasets : list of the folders in deep_learning/data/
     """
-    
+
     # list contends of data directory
     data_dir = get_data_dir_path()
     data_dir_contents = os.listdir(data_dir)
-    
+
     # filter out any files that might be in deep_learning/data/
     # beacuse a dataset is assumed to be any folder in this directory
     datasets = []
@@ -39,6 +39,11 @@ def get_available_datasets():
 
     return datasets
 
+def get_formats_for_dataset(dataset):
+    hdf5_file = tables.open_file(get_path_to_dataset(dataset)+os.sep+dataset+".hdf5", mode='r')
+    rval = [g._v_name for g in hdf5_file.walk_groups('/')]
+    hdf5_file.close()
+    return rval
 
 def verify_dataset(dataset_name):
     """ checks if dataset_name exists. Raises an IOError if it doesn't
@@ -64,30 +69,20 @@ def verify_dataset(dataset_name):
     return None # python does automatically, but makes code pretty
 
 
-def get_path_to_dataset(dataset_name, format=None):
+def get_path_to_dataset(dataset_name):
     """ returns the absolute location of the directory dataset_name
     If the dataset (folder) does not exist, raises an IOError, and if
     format.npz does not exist in the directory, an IOError
-    is also raised.  If no format is specified, returns the
-    path to the dataset.  If a format is specified, returns
-    the path to the format within the dataset
+    is also raised.  Returns the path to the dataset.
 
     Parameters
     ----------
     dataset_name : dataset to find the path to
     If the dataset name is not valid, an IOError will be raised
 
-    format : (default None) If a format is
-    specified, get_path_to_dataset will return the path to the .npz
-    file for this format.  A NameError will be raised if the
-    requested format does not exist.
-
     Returns
     -------
-    if format != None : the path to the format's
-    .npz file
-
-    else : the path to the dataset
+    The path to the dataset
     """
     # check if the dataset exists
     verify_dataset(dataset_name)
@@ -97,22 +92,7 @@ def get_path_to_dataset(dataset_name, format=None):
     data_dir = get_data_dir_path()
     dataset_dir = os.path.join(data_dir, dataset_name)
 
-    # if no format is specified, return the path to the
-    # dataset directory
-    if format == None:
-        return dataset_dir
-    # figure out whether the files for a given format exist
-    else:
-        dataset_path = os.path.join(dataset_dir,
-                                    (format + ".npz"))
-
-    if not os.path.isfile(dataset_path):
-        raise IOError('The file "%s" does not exist' %
-                      dataset_path)
-    
-    else: # if a file exists for the specified format
-        return dataset_path
-    
+    return dataset_dir
 
 def get_experiments_from_dataset(dataset_name):
     """ gets a list of the .experiment files from a given dataset
@@ -140,7 +120,8 @@ def get_experiments_from_dataset(dataset_name):
     return experiment_names
 
 def load_dataset(dataset_name, format):
-    dataset_path = get_path_to_dataset(dataset_name, format)
-    data = np.load(dataset_path)
-    return(data['x_train'], data['y_train'], data['x_test'], data['y_test'])
+    dataset_path = get_path_to_dataset(dataset_name) + os.sep + dataset_name + ".hdf5"
+    hdf5_file = tables.open_file(dataset_path, mode='r')
+    group = hdf5_file.get_node("/{}".format(format))
+    return hdf5_file, (group.x_train, group.y_train, group.x_test, group.y_test)
 
