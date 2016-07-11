@@ -163,8 +163,12 @@ def run(model, exp, terms, save_freq=5, data=None):
         progress(num_batches, num_batches, exp.batch_size, 0, end='\n')
         # Calculate stats and add the epoch results to the experiment object
         epoch = exp.results.add()
-        epoch.train_loss, epoch.train_accuracy = model.evaluate(x_train[:], y_train[:], batch_size=exp.batch_size, verbose=2)
-        epoch.test_loss, epoch.test_accuracy = model.evaluate(x_test[:], y_test[:], batch_size=exp.batch_size, verbose=2)
+        epoch.train_loss, epoch.train_accuracy = model.evaluate_generator(((x_train[i*exp.batch_size:(i+1)*exp.batch_size],
+                                                                           y_train[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(int(ceil(x_test.shape[0]/exp.batch_size)))),
+                                                                          int(ceil(x_test.shape[0]/exp.batch_size)))
+        epoch.test_loss, epoch.test_accuracy = model.evaluate_generator(((x_test[i*exp.batch_size:(i+1)*exp.batch_size],
+                                                                           y_test[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(num_batches)),
+                                                              num_batches)
         epoch.s_b = st.significance(model, data)
         epoch.auc = st.AUC(model, data, experiment_epoch=epoch)
         for r in st.num_of_each_cell(model, data):

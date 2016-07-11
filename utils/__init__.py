@@ -1,7 +1,7 @@
 from __future__ import division, print_function
 from os import fstat
 import tempfile, csv
-from math import pi
+from math import pi, ceil
 
 
 def which(myDict):
@@ -63,3 +63,8 @@ def get_file_len_and_shape(fname, delim=','):
                 cols = len(l)-1
             s.add(int(l[0]))
     return i + 1, [cols, len(s)]
+
+def sum_cols(array, batch_size=64):
+    return tuple([sum(
+        [array[j * batch_size:(j + 1) * batch_size, i].sum() for j in xrange(int(ceil(array.shape[0] / batch_size)))])
+           for i in xrange(array.shape[1])])
