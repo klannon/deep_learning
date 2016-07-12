@@ -1,8 +1,8 @@
 from __future__ import division, print_function
 from os import fstat
 import tempfile, csv
-from math import pi
 import numpy as np
+from math import pi, ceil
 
 
 def which(myDict):
@@ -102,3 +102,17 @@ def permute_event(event):
     np.random.shuffle(arange)
 
     return permuted[arange], labels[arange]
+
+def get_file_len_and_shape(fname, delim=','):
+    s = set()
+    with open(fname) as f:
+        for i, l in enumerate(csv.reader(f, delimiter=delim)):
+            if i == 0:
+                cols = len(l)-1
+            s.add(int(l[0]))
+    return i + 1, [cols, len(s)]
+
+def sum_cols(array, buffer=64):
+    return tuple([sum(
+        [array[j * buffer:(j + 1) * buffer, i].sum() for j in xrange(int(ceil(array.shape[0] / buffer)))])
+           for i in xrange(array.shape[1])])

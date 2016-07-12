@@ -23,7 +23,6 @@ from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
 import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
-import deep_learning.utils.misc as misc
 import deep_learning.utils.graphs as gr
 import deep_learning.utils.archive as ar
 import matplotlib.pyplot as plt
@@ -271,7 +270,7 @@ def run(model, exp, terms, save_freq=5, data=None):
         x_train, y_train, x_test, y_test = data
         x_train, x_test = tr.transform(x_train, x_test)
     else:
-        x_train, y_train, x_test, y_test = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
+        h_file, (x_train, y_train, x_test, y_test) = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
         x_train, x_test = tr.transform(x_train, x_test)
         data = x_train, y_train, x_test, y_test
 
@@ -310,10 +309,12 @@ def run(model, exp, terms, save_freq=5, data=None):
         progress(num_batches, num_batches, exp.batch_size, 0, end='\n')
         # Calculate stats and add the epoch results to the experiment object
         epoch = exp.results.add()
-        #print("\t Evaluating training:\n\t ", end='')
-        epoch.train_loss, epoch.train_accuracy = model.evaluate(x_train, y_train, batch_size=exp.batch_size, verbose=0)
-        #print("\t Evaluating testing:\n\t ", end='')
-        epoch.test_loss, epoch.test_accuracy = model.evaluate(x_test, y_test, batch_size=exp.batch_size, verbose=0)
+        epoch.train_loss, epoch.train_accuracy = model.evaluate_generator(((x_train[i*exp.batch_size:(i+1)*exp.batch_size],
+                                                                           y_train[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(int(ceil(x_test.shape[0]/exp.batch_size)))),
+                                                                          int(ceil(x_test.shape[0]/exp.batch_size)))
+        epoch.test_loss, epoch.test_accuracy = model.evaluate_generator(((x_test[i*exp.batch_size:(i+1)*exp.batch_size],
+                                                                           y_test[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(num_batches)),
+                                                              num_batches)
         epoch.s_b = st.significance(model, data)
         epoch.auc = st.AUC(model, data, experiment_epoch=epoch)
         for r in st.num_of_each_cell(model, data):
@@ -347,6 +348,7 @@ def run(model, exp, terms, save_freq=5, data=None):
 
     save(model, exp, save_dir, exp_file_name, graph=True)
     print("\t ", end='')
+    h_file.close()
 
 def save(model, exp, save_dir, exp_file_name, graph=False):
     ##
@@ -430,7 +432,9 @@ if __name__ == "__main__":
     parser.add_argument("--config", help="train based upon a .cfg file", default=None)
     parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())
-    args["dataset"], args["coords"] = args["dataset"].split('/')
+    _temp = args["dataset"].split('/')
+    args["dataset"] = _temp[0]
+    args["coords"] = '/'.join(_temp[1:])
 
     defaults = dict(learning_rate=0.001,
                     batch_size=64,

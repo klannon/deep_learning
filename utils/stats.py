@@ -3,6 +3,7 @@ import numpy as np
 from math import sqrt
 import deep_learning.utils.dataset as ds
 import deep_learning.utils.transformations as tr
+import deep_learning.utils as ut
 
 import matplotlib.pyplot as plt
 from numpy import trapz
@@ -26,16 +27,19 @@ MATRIX = """
 {0}     TTBar   TTHiggs
 """
 
-def count_filter(model, criteria, (x_test, y_test), **kwargs):
-    predictions = model.predict([x_test], **kwargs)
-    bArray = criteria(predictions, y_test)
-    return tuple([c.sum() for c in bArray.T])
+def count_filter(model, criteria, (x_test, y_test), batch_size=64, **kwargs):
+    rval = []
+    for i in xrange(int(y_test.shape[0]/batch_size)):
+        predictions = model.predict([x_test[i*batch_size:(i+1)*batch_size]], **kwargs)
+        bArray = criteria(predictions, y_test[i*batch_size:(i+1)*batch_size])
+        rval.append(ut.sum_cols(bArray, batch_size))
+    return tuple([c.sum() for c in np.array(rval).T])
 
 def num_of_each_cell(model, data, cutoff=0.5):
     x_train, y_train, x_test, y_test = data
     num_correct = count_filter(model, lambda p, y: (y > 0) == (p - y > cutoff - 1), (x_test, y_test))
     num_predicted = count_filter(model, lambda p, y: p > cutoff, (x_test, y_test))
-    test_totals = [c.sum() for c in y_test.T]
+    test_totals = ut.sum_cols(y_test)
     ss = num_correct[1]
     bs = num_predicted[1] - ss
     sb = test_totals[1]-ss
