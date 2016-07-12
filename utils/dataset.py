@@ -41,7 +41,7 @@ def get_available_datasets():
 
 def get_formats_for_dataset(dataset):
     hdf5_file = tables.open_file(get_path_to_dataset(dataset)+os.sep+dataset+".hdf5", mode='r')
-    rval = [g._v_name for g in hdf5_file.walk_groups('/')]
+    rval = [g._v_pathname for g in hdf5_file.walk_groups('/')]
     hdf5_file.close()
     return rval
 
@@ -119,9 +119,9 @@ def get_experiments_from_dataset(dataset_name):
 
     return experiment_names
 
-def load_dataset(dataset_name, format):
+def load_dataset(dataset_name, format, mode='r'):
     dataset_path = get_path_to_dataset(dataset_name) + os.sep + dataset_name + ".hdf5"
-    hdf5_file = tables.open_file(dataset_path, mode='r')
+    hdf5_file = tables.open_file(dataset_path, mode=mode)
     group = hdf5_file.get_node("/{}".format(format))
     return hdf5_file, (group.x_train, group.y_train, group.x_test, group.y_test)
 

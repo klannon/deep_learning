@@ -14,7 +14,6 @@ from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
 import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
-import deep_learning.utils.misc as misc
 import deep_learning.utils.graphs as gr
 import matplotlib.pyplot as plt
 from math import ceil
@@ -201,6 +200,7 @@ def run(model, exp, terms, save_freq=5, data=None):
     print("Total Time: {}".format(convert_seconds(valid.time)))
 
     save(model, exp, save_dir, exp_file_name, graph=True)
+    h_file.close()
 
 def save(model, exp, save_dir, exp_file_name, graph=False):
     ##
@@ -268,7 +268,9 @@ if __name__ == "__main__":
     parser.add_argument("--config", help="train based upon a .cfg file", default=None)
     parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())
-    args["dataset"], args["coords"] = args["dataset"].split('/')
+    _temp = args["dataset"].split('/')
+    args["dataset"] = _temp[0]
+    args["coords"] = '/'.join(_temp[1:])
 
     defaults = dict(learning_rate=0.001,
                     batch_size=64,
