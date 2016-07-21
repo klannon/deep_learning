@@ -7,6 +7,7 @@ import deep_learning.utils as ut
 
 import matplotlib.pyplot as plt
 from numpy import trapz
+from math import ceil
 
 LUMINOSITY = 30  # fb^-1
 TTHIGGS_X_SECTION = 212  # fb
@@ -91,6 +92,23 @@ def AUC(model, data, datapoints=20, save='', experiment_epoch=None):
 def confusion_matrix(model, data, offset='', **kwargs):
     eff = efficiencies(model, data, **kwargs)
     return MATRIX.format(offset, *(eff*100).flatten())
+
+def get_output_distro(model, data, batch_size=64, nbins=50):
+    x_train, y_train, x_test, y_test = data
+    output = np.zeros(y_test.shape)
+    for i in xrange(int(ceil(x_test.shape[0] / batch_size))):
+        output[i * batch_size:(i + 1) * batch_size] = model.predict(x_test[i * batch_size:(i + 1) * batch_size])
+    background = output[(y_test[:] == 1)[:, 0]][:, 1]
+    signal = output[(y_test[:] == 1)[:, 1]][:, 1]
+
+    bins = [i / nbins for i in xrange(nbins + 1)]
+    frequencies = {"background": [], "signal": []}
+
+    for i in xrange(nbins):
+        frequencies["background"].append(((bins[i] <= background) & (background <= bins[i + 1])).sum())
+        frequencies["signal"].append(((bins[i] <= signal) & (signal <= bins[i + 1])).sum())
+
+    return frequencies
 
 
 if __name__ == "__main__":

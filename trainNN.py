@@ -118,7 +118,7 @@ def build_default(config, exp):
     layer.input_dimension = 44
     layer.output_dimension = config["nodes"]
 
-    model.add(Dense(config["nodes"], input_dim=44, activation="relu"))#, W_regularizer=l1(0.001)))
+    model.add(Dense(config["nodes"], input_dim=44, activation="relu", W_regularizer=l1(0.001)))
     #model.add(Dropout(0.2))
 
     for l in xrange(config["layers"]-1):
@@ -126,7 +126,7 @@ def build_default(config, exp):
         layer.type = 0
         layer.input_dimension = config["nodes"]
         layer.output_dimension = config["nodes"]
-        model.add(Dense(config["nodes"], activation="relu"))#, W_regularizer=l1(0.001)))
+        model.add(Dense(config["nodes"], activation="relu", W_regularizer=l1(0.001)))
     #    model.add(Dropout(0.2))
 
     layer = exp.structure.add()
@@ -195,10 +195,13 @@ def build_supernet(config, exp):
 
     ### SUPER-NET CLASSIFIER EXTENSION
     extended_net = Sequential(name="ReLu Network")
-    extended_net.add(Dense(20, input_dim=16800, activation="relu"))
-    extended_net.add(Dense(20, activation="relu"))
-    extended_net.add(Dense(20, activation="relu"))
-    extended_net.add(Dense(20, activation="relu"))
+    extended_net.add(Dense(config["nodes"], input_dim=16800, activation="relu"))
+    for l in xrange(config["layers"] - 1):
+        layer = exp.structure.add()
+        layer.type = 0
+        layer.input_dimension = config["nodes"]
+        layer.output_dimension = config["nodes"]
+        extended_net.add(Dense(config["nodes"], activation="relu"))
     soft = Dense(2, activation="softmax", name="Classifier (Softmax)")
 
     o = extended_net(o)
@@ -270,8 +273,7 @@ def run(model, exp, terms, save_freq=5, data=None):
         x_train, y_train, x_test, y_test = data
         x_train, x_test = tr.transform(x_train, x_test)
     else:
-        h_file, (x_train, y_train, x_test, y_test) = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates)
-        x_train, x_test = tr.transform(x_train, x_test)
+        h_file, (x_train, y_train, x_test, y_test) = ds.load_dataset(pb.Experiment.Dataset.Name(exp.dataset), exp.coordinates+'/transformed')
         data = x_train, y_train, x_test, y_test
 
     exp_file_name = exp.description + '.exp'
@@ -306,21 +308,42 @@ def run(model, exp, terms, save_freq=5, data=None):
             bTimes = np.append(bTimes, clock()-bt)
             bETA = np.median(bTimes)*(num_batches-b-1)
         # Finish progress bar
-        progress(num_batches, num_batches, exp.batch_size, 0, end='\n')
+        progress(num_batches, num_batches, exp.batch_size, 0, end='\n', time=clock()-t)
         # Calculate stats and add the epoch results to the experiment object
         epoch = exp.results.add()
+        timer = clock()
+        print("Evaluating Train")
         epoch.train_loss, epoch.train_accuracy = model.evaluate_generator(((x_train[i*exp.batch_size:(i+1)*exp.batch_size],
-                                                                           y_train[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(int(ceil(x_test.shape[0]/exp.batch_size)))),
-                                                                          int(ceil(x_test.shape[0]/exp.batch_size)))
+                                                                           y_train[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(num_batches)),
+                                                                          num_batches, max_q_size=min((num_batches//2, 10)))
+        print("Finished {:.2f}".format(clock()-timer))
+        timer = clock()
+        print("Evaluating Test")
         epoch.test_loss, epoch.test_accuracy = model.evaluate_generator(((x_test[i*exp.batch_size:(i+1)*exp.batch_size],
-                                                                           y_test[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(num_batches)),
-                                                              num_batches)
+                                                                           y_test[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(int(ceil(x_test.shape[0]/exp.batch_size)))),
+                                                                        int(ceil(x_test.shape[0] / exp.batch_size)), max_q_size=min((int(ceil(x_test.shape[0] / exp.batch_size))//2, 10)))
+        print("Finished {:.2f}".format(clock() - timer))
+        timer = clock()
+        print("Calculating Sig")
         epoch.s_b = st.significance(model, data)
-        epoch.auc = st.AUC(model, data, experiment_epoch=epoch)
+        print("Finished {:.2f}".format(clock() - timer))
+        timer = clock()
+        #print("Calculating AUC {:.2f}".format(clock()))
+        #epoch.auc = st.AUC(model, data, experiment_epoch=epoch)
+        #print("Finished {:.2f}".format(clock() - timer))
+        timer = clock()
         for r in st.num_of_each_cell(model, data):
             epoch.matrix.add().columns.extend(r)
+        print("Making CFM")
         matrix = st.confusion_matrix(model, data, offset='\t ')
+        print("Finished {:.2f}".format(clock() - timer))
         epoch.num_seconds = clock() - t
+        timer=clock()
+        print("Getting output")
+        output = st.get_output_distro(model, data)
+        epoch.output.background.extend(output["background"])
+        epoch.output.signal.extend(output["signal"])
+        print("Finished {:.2f}".format(clock() - timer))
         # Print statistics
         print("\t Train Accuracy: {:.3f}\tTest Accuracy: {:.3f}".format(epoch.train_accuracy, epoch.test_accuracy))
         if valid.update_w():
@@ -384,10 +407,16 @@ def save(model, exp, save_dir, exp_file_name, graph=False):
         print("Failed to save model weights (hdf5): {}".format(e))"""
 
     if graph:
-        gr.s_b(exp)
+        model1 = load_model("ttHLep/U_1to1")
+        h_file, data = ds.load_dataset("ttHLep", "Unsorted_Large/transformed")
+        gr.output_distro(model1, data, subplot=221, labels=["Default Bkg", "Default Sig"])
+        gr.output_distro(model, data, subplot=222, labels=["Supernet Bkg", "Supernet Sig"])
+        gr.overlay_distro(model1, model, data, category="background", labels=["Default", "Supernet"], subplot=223)
+        gr.overlay_distro(model1, model, data, labels=["Default", "Supernet"], subplot=224)
+        """gr.s_b(exp)
         gr.auc(exp)
         gr.correct(exp)
-        gr.accuracy(exp)
+        gr.accuracy(exp)"""
         plt.tight_layout()
         plt.savefig("{}{}{}.png".format(save_dir, os.sep, exp.description), format="png")
         plt.clf()

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from math import sqrt
 import numpy as np
 from deep_learning.protobuf import load_experiment
+from math import ceil
+import deep_learning.utils as ut
 import deep_learning.utils.dataset as ds
 import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
@@ -101,12 +103,15 @@ def _new_roc_curve(model, data, datapoints=20, label=None, subplot=None):
     plt.xlabel("Background Inefficiency")
     plt.legend(loc=0, fontsize="x-small")
 
-def output_distro(model, data, labels=None, subplot=None):
+def output_distro(model, data, batch_size=64, labels=None, subplot=None):
     x_train, y_train, x_test, y_test = data
     labels = labels if labels else ["Background", "Signal"]
-    output = model.predict(x_test)
-    background = output[(y_test == 1)[:, 0]][:, 1]
-    signal = output[(y_test == 1)[:, 1]][:, 1]
+    output = np.zeros(y_test.shape)
+    for i in xrange(int(ceil(x_test.shape[0]/batch_size))):
+        output[i*batch_size:(i+1)*batch_size] = model.predict(x_test[i*batch_size:(i+1)*batch_size])
+
+    background = output[(y_test[:] == 1)[:, 0]][:, 1]
+    signal = output[(y_test[:] == 1)[:, 1]][:, 1]
     if subplot:
         plt.subplot(subplot)
     plt.hist(background, 50, alpha=0.5, label=labels[0])
@@ -116,16 +121,20 @@ def output_distro(model, data, labels=None, subplot=None):
     plt.ylabel("Number of Events")
     plt.legend(loc=0, fontsize="x-small")
 
-def overlay_distro(model1, model2, data, category="signal", labels=None, subplot=None):
+def overlay_distro(model1, model2, data, category="signal", batch_size=64, labels=None, subplot=None):
     x_train, y_train, x_test, y_test = data
     labels = labels if labels else ["Model1", "Model2"]
-    output1 = model1.predict(x_test)
-    output2 = model2.predict(x_test)
+    output1 = np.zeros(y_test.shape)
+    for i in xrange(int(ceil(x_test.shape[0] / batch_size))):
+        output1[i * batch_size:(i + 1) * batch_size] = model1.predict(x_test[i * batch_size:(i + 1) * batch_size])
+    output2 = np.zeros(y_test.shape)
+    for i in xrange(int(ceil(x_test.shape[0] / batch_size))):
+        output2[i * batch_size:(i + 1) * batch_size] = model2.predict(x_test[i * batch_size:(i + 1) * batch_size])
     category = category.lower()
     col = 1 if category == "signal" else 0 if category == "background" else None
     category = category.capitalize()
-    signal1 = output1[(y_test == 1)[:, 1]][:, col]
-    signal2 = output2[(y_test == 1)[:, 1]][:, col]
+    signal1 = output1[(y_test[:] == 1)[:, col]][:, 1]
+    signal2 = output2[(y_test[:] == 1)[:, col]][:, 1]
     if subplot:
         plt.subplot(subplot)
     plt.hist(signal1, 50, alpha=0.5, label=labels[0])
@@ -157,9 +166,8 @@ def scatterplot(model1, model2, data, category="signal", labels=None, subplot=No
 
 
 if __name__ == "__main__":
-    jets = "9"
-    exp = load_experiment("ttHLep/U_1to1_l1")
-    exp2 = load_experiment("ttHLep/U_1to1_l1_{}j".format(jets))
+    exp = load_experiment("ttHLep/S_1to1")
+    exp2 = load_experiment("ttHLep/SL_1to1")
     """label = "Default"
     label2 = "4j"
     s_b(exp, label)
@@ -174,31 +182,36 @@ if __name__ == "__main__":
     #roc_curve(exp2, label="2", subplot=212)
     from deep_learning.trainNN import load_model
     model1 = load_model("ttHLep/U_1to1_l1")
-    model2 = load_model("ttHLep/U_1to1_l1_{}j".format(jets))
+    model2 = load_model("ttHLep/S_1to1_l1")
     from keras.optimizers import Adam
     model1.compile(loss="categorical_crossentropy", optimizer=Adam(), metrics=["accuracy"])
-    x_train, y_train, x_test, y_test = ds.load_dataset("ttHLep", "{}jets_Unsorted_1to1".format(jets))
-    x_train, x_test = tr.transform(x_train, x_test)
+    h_file, (x_train, y_train, x_test, y_test) = ds.load_dataset("ttHLep", "Unsorted/1to1/transformed")
     data = (x_train, y_train, x_test, y_test)
-    _data = _1, y1, _2, y2 = ds.load_dataset("ttHLep", "Unsorted")
-    _1, y3, _2, y4 = ds.load_dataset("ttHLep", "{}jets_Unsorted".format(jets))
-    TOTAL_BKG, TOTAL_SIG = [c1.sum()+c2.sum() for c1,c2 in zip(y1.T, y2.T)]
-    THIS_BKG, THIS_SIG = [c1.sum()+c2.sum() for c1,c2 in zip(y3.T, y4.T)]
+    _h1_file, (_1, y1, _2, y2) = ds.load_dataset("ttHLep", "Sorted")
+    _data = (_1, y1, _2, y2)
+    _h2_file, (_1, y3, _2, y4) = ds.load_dataset("ttHLep", "Sorted/1to1")
+    TOTAL_BKG, TOTAL_SIG = map(sum, zip(ut.sum_cols(y1), ut.sum_cols(y2)))
+    THIS_BKG, THIS_SIG = map(sum, zip(ut.sum_cols(y3), ut.sum_cols(y4)))
     weight = (THIS_SIG/TOTAL_SIG)/sqrt(THIS_BKG/TOTAL_BKG)
+    print weight
     override = (THIS_SIG/TOTAL_SIG, THIS_BKG/TOTAL_BKG)
-    one, two = [0,1]
+    """one, two = [0,1]
     if one:
         output_distro(model1, data, subplot=221, labels=["Default Bkg", "Default Sig"])
-        output_distro(model2, data, subplot=222, labels=["{}j Bkg".format(jets), "{}j Sig".format(jets)])
+        output_distro(model2, data, subplot=222, labels=["Large DS Bkg", "Large DS Sig"])
         _new_roc_curve(model1, data, subplot=223, label="Default")
-        _new_roc_curve(model2, data, subplot=224, label="{}j".format(jets))
+        _new_roc_curve(model2, data, subplot=224, label="Large DS")
     elif two:
-        overlay_distro(model1, model2, data, category="background", labels=["Default", "{}j".format(jets)], subplot=121)
-        overlay_distro(model1, model2, data, labels=["Default", "{}j".format(jets)], subplot=122)
-        plt.gcf().set_size_inches(10, 5)
+        overlay_distro(model1, model2, data, category="background", labels=["Default", "Large DS"], subplot=121)
+        overlay_distro(model1, model2, data, labels=["Default", "Large DS"], subplot=122)
+        plt.gcf().set_size_inches(10, 5)"""
+    output_distro(model1, data, subplot=111, labels=["Supernet Bkg", "Supernet Sig"])
+    #output_distro(model2, data, subplot=222, labels=["Supernet Bkg", "Supernet Sig"])
+    #overlay_distro(model1, model2, data, category="background", labels=["Default", "Supernet"], subplot=223)
+    #overlay_distro(model1, model2, data, labels=["Default", "Supernet"], subplot=224)
     plt.tight_layout()
     #plt.show()
-    plt.savefig("Default+{}j.png".format(jets))
+    plt.savefig("temp.png")
     print weight*st.significance(model1, data), weight*st.significance(model2, data), st.significance('','',override=override)
-    print model1.evaluate(x_test, y_test)[1], exp2.results[-1].test_accuracy
+    #print model1.evaluate(x_test, y_test)[1], exp2.results[-1].test_accuracy
     print st.confusion_matrix(model1, data), st.confusion_matrix(model2, data)

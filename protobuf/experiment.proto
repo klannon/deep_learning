@@ -23,6 +23,7 @@ message Epoch {
     float auc = 7;
     repeated Efficiencies curve = 8;
     repeated Row matrix = 9;
+    Output output = 10;
 }
 
 message Row {
@@ -33,6 +34,11 @@ message Efficiencies {
     float signal = 1;
     float background = 2;
     float cutoff = 3;
+}
+
+message Output {
+    repeated int32 background = 1;
+    repeated int32 signal = 2;
 }
 
 message Experiment {

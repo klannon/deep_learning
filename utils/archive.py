@@ -241,7 +241,8 @@ def save_ratios(dataset, ratios, buffer=1000):
 
     ratios = [ratios] if type(ratios) is str else ratios
     ratios = map(lambda x: map(float, x.split(':')), ratios)
-    data, format = dataset.split('/')
+    data = dataset.split('/')[0]
+    format = '/'.join(dataset.split('/')[1:])
     main_file, (x_train, y_train, x_test, y_test) = ds.load_dataset(data, format, mode='a')
 
     bkg_test, sig_test = sum_cols(y_test)
@@ -540,3 +541,26 @@ def add_group_hdf5(save_path, group, expected_shapes, where='/', names=None):
 def remove_group_hdf5(save_path, group, where='/', recursive=True):
     hdf5_file = tables.open_file(save_path, mode='a')
     hdf5_file.remove_node(where+group, recursive=recursive)
+
+def add_transformed(save_path, group, buffer=1000, where='/'):
+    hdf5_file = tables.open_file(save_path, mode='a')
+    parent = hdf5_file.get_node(where+group)
+    data = (parent.x_train, parent.y_train, parent.x_test, parent.y_test)
+    shapes = map(lambda x: x.shape, data)
+    h_comp = tables.Filters(complevel=5, complib='blosc')
+    h_group = hdf5_file.create_group(where+group, 'transformed', 'Data scaled to Gaussian distribution')
+    h_data = []
+    for k, shape in zip(["x_train", "y_train", "x_test", "y_test"], shapes):
+        h_data.append(hdf5_file.create_carray(h_group, k,
+                                              tables.Float32Atom(),
+                                              shape=shape,
+                                              filters=h_comp))
+    scale = tr.get_transform(data[0])
+    for i, d in enumerate(data):
+        for j in xrange(int(math.ceil(d.shape[0] / buffer))):
+            if i%2 == 1:
+                h_data[i][j*buffer:(j+1)*buffer] = d[j*buffer:(j+1)*buffer]
+            else:
+                h_data[i][j * buffer:(j + 1) * buffer] = scale.transform(d[j * buffer:(j + 1) * buffer])
+    hdf5_file.flush()
+    hdf5_file.close()

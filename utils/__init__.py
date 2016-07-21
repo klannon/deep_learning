@@ -12,12 +12,12 @@ def which(myDict):
             rval.append(k)
     return rval
 
-def progress(batch, total, batch_size, eta, end=''):
+def progress(batch, total, batch_size, eta, end='', time=0):
     bars = batch*100//total//4
     rval = "\t {}/{} [".format(batch*batch_size, total*batch_size)+">"*bars+"."*(25-bars)+"]"
-    rval += " ETA: {:.2f}s".format(eta)
+    rval += " ETA: {:.2f}s".format(eta) if eta else " - {:.2f}s".format(time)
     if fstat(0) == fstat(1):
-        print("\r"+rval, end=end)
+        print("\r"+rval+" "*(80-len(rval)), end=end)
     else:
         if batch == total:
             print(rval)

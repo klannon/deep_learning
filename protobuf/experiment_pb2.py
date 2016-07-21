@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='experiment.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"t\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\x12\x19\n\x04type\x18\x03 \x01(\x0e\x32\x0b.Layer.Type\"\x1d\n\x04Type\x12\x08\n\x04RELU\x10\x00\x12\x0b\n\x07SOFTMAX\x10\x01\"\xc0\x01\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x02\x12\x12\n\ntrain_loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\x12\x11\n\ttest_loss\x18\x04 \x01(\x02\x12\x15\n\rtest_accuracy\x18\x05 \x01(\x02\x12\x0b\n\x03s_b\x18\x06 \x01(\x02\x12\x0b\n\x03\x61uc\x18\x07 \x01(\x02\x12\x1c\n\x05\x63urve\x18\x08 \x03(\x0b\x32\r.Efficiencies\x12\x14\n\x06matrix\x18\t \x03(\x0b\x32\x04.Row\"\x16\n\x03Row\x12\x0f\n\x07\x63olumns\x18\x01 \x03(\x02\"B\n\x0c\x45\x66\x66iciencies\x12\x0e\n\x06signal\x18\x01 \x01(\x02\x12\x12\n\nbackground\x18\x02 \x01(\x02\x12\x0e\n\x06\x63utoff\x18\x03 \x01(\x02\"\xe5\x03\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x12\n\nbatch_size\x18\x07 \x01(\x05\x12\x13\n\x03sgd\x18\x08 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\t \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\n \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\x0b \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0c \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\r \x01(\x0b\x32\x07.AdamaxH\x00\x12$\n\x07\x64\x61taset\x18\x0e \x01(\x0e\x32\x13.Experiment.Dataset\x12\x13\n\x0b\x63oordinates\x18\x0f \x01(\t\x12\x12\n\ntotal_time\x18\x10 \x01(\x02\x12\x13\n\x0b\x64\x65scription\x18\x11 \x01(\t\"2\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\n\n\x06ttHLep\x10\x01\x12\x0c\n\x08UC_HIGGS\x10\x02\x42\x0c\n\noptimizersJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03R\rlearning_rateb\x06proto3')
+  serialized_pb=_b('\n\x10\x65xperiment.proto\x1a\x10optimizers.proto\"\x8c\x01\n\x05Layer\x12\x17\n\x0finput_dimension\x18\x01 \x01(\x05\x12\x18\n\x10output_dimension\x18\x02 \x01(\x05\x12\x19\n\x04type\x18\x03 \x01(\x0e\x32\x0b.Layer.Type\"5\n\x04Type\x12\x08\n\x04RELU\x10\x00\x12\x0b\n\x07SOFTMAX\x10\x01\x12\t\n\x05MERGE\x10\x02\x12\x0b\n\x07SIGMOID\x10\x03\"\xd9\x01\n\x05\x45poch\x12\x13\n\x0bnum_seconds\x18\x01 \x01(\x02\x12\x12\n\ntrain_loss\x18\x02 \x01(\x02\x12\x16\n\x0etrain_accuracy\x18\x03 \x01(\x02\x12\x11\n\ttest_loss\x18\x04 \x01(\x02\x12\x15\n\rtest_accuracy\x18\x05 \x01(\x02\x12\x0b\n\x03s_b\x18\x06 \x01(\x02\x12\x0b\n\x03\x61uc\x18\x07 \x01(\x02\x12\x1c\n\x05\x63urve\x18\x08 \x03(\x0b\x32\r.Efficiencies\x12\x14\n\x06matrix\x18\t \x03(\x0b\x32\x04.Row\x12\x17\n\x06output\x18\n \x01(\x0b\x32\x07.Output\"\x16\n\x03Row\x12\x0f\n\x07\x63olumns\x18\x01 \x03(\x02\"B\n\x0c\x45\x66\x66iciencies\x12\x0e\n\x06signal\x18\x01 \x01(\x02\x12\x12\n\nbackground\x18\x02 \x01(\x02\x12\x0e\n\x06\x63utoff\x18\x03 \x01(\x02\",\n\x06Output\x12\x12\n\nbackground\x18\x01 \x03(\x05\x12\x0e\n\x06signal\x18\x02 \x03(\x05\"\xe5\x03\n\nExperiment\x12\x17\n\x0fstart_date_time\x18\x03 \x01(\t\x12\x15\n\rend_date_time\x18\x04 \x01(\t\x12\x19\n\tstructure\x18\x05 \x03(\x0b\x32\x06.Layer\x12\x17\n\x07results\x18\x06 \x03(\x0b\x32\x06.Epoch\x12\x12\n\nbatch_size\x18\x07 \x01(\x05\x12\x13\n\x03sgd\x18\x08 \x01(\x0b\x32\x04.SGDH\x00\x12\x1b\n\x07rmsprop\x18\t \x01(\x0b\x32\x08.RMSpropH\x00\x12\x1b\n\x07\x61\x64\x61grad\x18\n \x01(\x0b\x32\x08.AdagradH\x00\x12\x1d\n\x08\x61\x64\x61\x64\x65lta\x18\x0b \x01(\x0b\x32\t.AdadeltaH\x00\x12\x15\n\x04\x61\x64\x61m\x18\x0c \x01(\x0b\x32\x05.AdamH\x00\x12\x19\n\x06\x61\x64\x61max\x18\r \x01(\x0b\x32\x07.AdamaxH\x00\x12$\n\x07\x64\x61taset\x18\x0e \x01(\x0e\x32\x13.Experiment.Dataset\x12\x13\n\x0b\x63oordinates\x18\x0f \x01(\t\x12\x12\n\ntotal_time\x18\x10 \x01(\x02\x12\x13\n\x0b\x64\x65scription\x18\x11 \x01(\t\"2\n\x07\x44\x61taset\x12\r\n\tOSU_TTBAR\x10\x00\x12\n\n\x06ttHLep\x10\x01\x12\x0c\n\x08UC_HIGGS\x10\x02\x42\x0c\n\noptimizersJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03R\rlearning_rateb\x06proto3')
   ,
   dependencies=[optimizers__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -41,11 +41,19 @@ _LAYER_TYPE = _descriptor.EnumDescriptor(
       name='SOFTMAX', index=1, number=1,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='MERGE', index=2, number=2,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='SIGMOID', index=3, number=3,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=125,
-  serialized_end=154,
+  serialized_start=126,
+  serialized_end=179,
 )
 _sym_db.RegisterEnumDescriptor(_LAYER_TYPE)
 
@@ -70,8 +78,8 @@ _EXPERIMENT_DATASET = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=838,
-  serialized_end=888,
+  serialized_start=934,
+  serialized_end=984,
 )
 _sym_db.RegisterEnumDescriptor(_EXPERIMENT_DATASET)
 
@@ -117,8 +125,8 @@ _LAYER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=38,
-  serialized_end=154,
+  serialized_start=39,
+  serialized_end=179,
 )
 
 
@@ -192,6 +200,13 @@ _EPOCH = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='output', full_name='Epoch.output', index=9,
+      number=10, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -204,8 +219,8 @@ _EPOCH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=157,
-  serialized_end=349,
+  serialized_start=182,
+  serialized_end=399,
 )
 
 
@@ -235,8 +250,8 @@ _ROW = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=351,
-  serialized_end=373,
+  serialized_start=401,
+  serialized_end=423,
 )
 
 
@@ -280,8 +295,46 @@ _EFFICIENCIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=375,
-  serialized_end=441,
+  serialized_start=425,
+  serialized_end=491,
+)
+
+
+_OUTPUT = _descriptor.Descriptor(
+  name='Output',
+  full_name='Output',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='background', full_name='Output.background', index=0,
+      number=1, type=5, cpp_type=1, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='signal', full_name='Output.signal', index=1,
+      number=2, type=5, cpp_type=1, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=493,
+  serialized_end=537,
 )
 
 
@@ -413,14 +466,15 @@ _EXPERIMENT = _descriptor.Descriptor(
       name='optimizers', full_name='Experiment.optimizers',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=444,
-  serialized_end=929,
+  serialized_start=540,
+  serialized_end=1025,
 )
 
 _LAYER.fields_by_name['type'].enum_type = _LAYER_TYPE
 _LAYER_TYPE.containing_type = _LAYER
 _EPOCH.fields_by_name['curve'].message_type = _EFFICIENCIES
 _EPOCH.fields_by_name['matrix'].message_type = _ROW
+_EPOCH.fields_by_name['output'].message_type = _OUTPUT
 _EXPERIMENT.fields_by_name['structure'].message_type = _LAYER
 _EXPERIMENT.fields_by_name['results'].message_type = _EPOCH
 _EXPERIMENT.fields_by_name['sgd'].message_type = optimizers__pb2._SGD
@@ -453,6 +507,7 @@ DESCRIPTOR.message_types_by_name['Layer'] = _LAYER
 DESCRIPTOR.message_types_by_name['Epoch'] = _EPOCH
 DESCRIPTOR.message_types_by_name['Row'] = _ROW
 DESCRIPTOR.message_types_by_name['Efficiencies'] = _EFFICIENCIES
+DESCRIPTOR.message_types_by_name['Output'] = _OUTPUT
 DESCRIPTOR.message_types_by_name['Experiment'] = _EXPERIMENT
 
 Layer = _reflection.GeneratedProtocolMessageType('Layer', (_message.Message,), dict(
@@ -482,6 +537,13 @@ Efficiencies = _reflection.GeneratedProtocolMessageType('Efficiencies', (_messag
   # @@protoc_insertion_point(class_scope:Efficiencies)
   ))
 _sym_db.RegisterMessage(Efficiencies)
+
+Output = _reflection.GeneratedProtocolMessageType('Output', (_message.Message,), dict(
+  DESCRIPTOR = _OUTPUT,
+  __module__ = 'experiment_pb2'
+  # @@protoc_insertion_point(class_scope:Output)
+  ))
+_sym_db.RegisterMessage(Output)
 
 Experiment = _reflection.GeneratedProtocolMessageType('Experiment', (_message.Message,), dict(
   DESCRIPTOR = _EXPERIMENT,

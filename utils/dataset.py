@@ -39,7 +39,7 @@ def get_available_datasets():
 
     return datasets
 
-def get_formats_for_dataset(dataset):
+def get_nodes(dataset):
     hdf5_file = tables.open_file(get_path_to_dataset(dataset)+os.sep+dataset+".hdf5", mode='r')
     rval = [g._v_pathname for g in hdf5_file.walk_groups('/')]
     hdf5_file.close()
@@ -107,17 +107,7 @@ def get_experiments_from_dataset(dataset_name):
     experiments : list of the names of the .experiment files in
     dataset_name
     """
-    dataset_path = get_path_to_dataset(dataset_name)
-
-    dataset_files = os.listdir(dataset_path)
-
-    experiment_names = []
-    for file_name in dataset_files:
-        components = file_name.split(".")
-        if components[1] == "exp":
-            experiment_names.append(components[0])
-
-    return experiment_names
+    return next(os.walk(get_path_to_dataset(dataset_name)))[1]
 
 def load_dataset(dataset_name, format, mode='r'):
     dataset_path = get_path_to_dataset(dataset_name) + os.sep + dataset_name + ".hdf5"
