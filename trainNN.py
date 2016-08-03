@@ -14,8 +14,6 @@ from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
 import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
-import deep_learning.utils.graphs as gr
-import matplotlib.pyplot as plt
 from math import ceil
 from time import clock
 import numpy as np
@@ -220,15 +218,6 @@ def save(model, exp, save_dir, exp_file_name, graph=False):
 
     w = model.get_weights()
     np.save("weights", w)
-
-    if graph:
-        gr.s_b(exp)
-        gr.auc(exp)
-        gr.correct(exp)
-        gr.accuracy(exp)
-        plt.tight_layout()
-        plt.savefig("{}{}{}.png".format(save_dir, os.sep, exp.description), format="png")
-        plt.clf()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
