@@ -23,22 +23,11 @@ from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
 import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
-import deep_learning.utils.graphs as gr
 import deep_learning.utils.archive as ar
-import matplotlib.pyplot as plt
 from math import ceil
 from time import clock
 import numpy as np
 from deep_learning.utils import E
-#from keras.utils.visualize_util import plot
-
-"""
-model.from_json(file)
-
-from keras.utils.visualize_util import plot
-plot(model, to_file='model.png')
-visualization
-"""
 
 def load_model(exp_name):
     data, name = exp_name.split('/')
@@ -89,7 +78,6 @@ class Permute(Layer):
 
         rval = K.concatenate([K.dot(x, self.T[i].transpose()) for i in xrange(self.num_p)], axis=0)
 
-        #indexes = printing.Print("Indexes")(indexes)
         temp = rval.copy()
         theano.scan(lambda b, x, skip: T.set_subtensor(rval[b::skip], temp[b::skip][self.indices,]),
                              n_steps=skip,
@@ -137,21 +125,7 @@ def build_default(config, exp):
 
     return model
 
-### SORTING NET
-#inputs = [Input(shape=(44,), name="Event Input {}".format(i)) for i in xrange(len(perms))]
-
-"""def clean_sorting_outputs(x):
-    skip = x.shape[0] // len(perms)
-    out, _ = theano.scan(lambda b, x, skip: K.reshape(x[b*skip:(b+1)*skip], (1, x.shape[1] * len(perms))),
-                         n_steps=skip,
-                         sequences=[T.arange(skip)],
-                         non_sequences=[x, skip])
-    return T.flatten(out, outdim=2)
-
-o = Lambda(clean_sorting_outputs,
-           output_shape=lambda s: (exp.batch_size, 20 * len(perms)),
-           name="Filter")(o)"""
-
+### SORTING NET ( not updated )
 def build_sorting_net(config, exp):
     inputs = Input(shape=(44,), name="Event Input")
     extended_net = Sequential(name="ReLu Network")
@@ -166,9 +140,9 @@ def build_sorting_net(config, exp):
 
     return Model(input=inputs, output=o)
 
+### SUPER NET
 def build_supernet(config, exp):
 
-    ### SUPER NET
     perms = list(ar.gen_permutations(2,7,2))
 
     def clean_outputs(x):
@@ -182,7 +156,7 @@ def build_supernet(config, exp):
     inputs = Input(shape=(44,), name="Event Input")
 
     sorted_model = Sequential(name="Sorted Model")
-    for ix, layer in enumerate(load_model("ttHLep/S_1to1_small").layers[:-1]):
+    for ix, layer in enumerate(load_model("ttHLep/CAoptimized").layers[:-1]):
         layer.trainable = False
         sorted_model.add(layer)
         sorted_model.layers[ix].set_weights(layer.get_weights())
@@ -233,7 +207,7 @@ def build(config=None):
                                          'x'.join(map(lambda x: hex(int(x))[2:], str(time.time()).split('.'))))
 
 
-    model = build_supernet(config, exp)
+    model = build_default(config, exp)
 
     ##
     # Generate the optimization method
@@ -316,13 +290,13 @@ def run(model, exp, terms, save_freq=5, data=None):
         epoch.train_loss, epoch.train_accuracy = model.evaluate_generator(((x_train[i*exp.batch_size:(i+1)*exp.batch_size],
                                                                            y_train[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(num_batches)),
                                                                           num_batches, max_q_size=min((num_batches//2, 10)))
-        print("Finished {:.2f}".format(clock()-timer))
+        print("Finished {:.2f}s".format(clock()-timer))
         timer = clock()
         print("Evaluating Test")
         epoch.test_loss, epoch.test_accuracy = model.evaluate_generator(((x_test[i*exp.batch_size:(i+1)*exp.batch_size],
                                                                            y_test[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(int(ceil(x_test.shape[0]/exp.batch_size)))),
                                                                         int(ceil(x_test.shape[0] / exp.batch_size)), max_q_size=min((int(ceil(x_test.shape[0] / exp.batch_size))//2, 10)))
-        print("Finished {:.2f}".format(clock() - timer))
+        print("Finished {:.2f}s".format(clock() - timer))
         timer = clock()
         print("Calculating Sig")
         epoch.s_b = st.significance(model, data)
@@ -358,6 +332,7 @@ def run(model, exp, terms, save_freq=5, data=None):
         print("\t Area Under the Curve (efficiency): {:.3f}".format(epoch.auc))
         print(matrix)
 
+        # Saves the model
         if (len(exp.results) % save_freq) == 0:
             save(model, exp, save_dir, exp_file_name)
             print("\t ", end='')
@@ -369,25 +344,28 @@ def run(model, exp, terms, save_freq=5, data=None):
     print("\n"+valid.failed)
     print("Total Time: {}".format(convert_seconds(valid.time)))
 
-    save(model, exp, save_dir, exp_file_name, graph=True)
+    save(model, exp, save_dir, exp_file_name)
     print("\t ", end='')
     h_file.close()
 
-def save(model, exp, save_dir, exp_file_name, graph=False):
+def save(model, exp, save_dir, exp_file_name):
     ##
     # Save the model configuration, weights, and experiment object
     ##
 
+    # Makes a save directory if one doesn't exist
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
     os.chdir(save_dir)
 
+    # Writes the experiment file (needs to be binary)
     try:
         with open(exp_file_name, "wb") as experiment_file:
             experiment_file.write(exp.SerializeToString())
     except Exception as e:
         print("Failed to save experiment object: {}".format(e))
 
+    # Writes the model configuration
     config = model.get_config()
     try:
         with open("cfg.json", 'w') as fp:
@@ -395,33 +373,14 @@ def save(model, exp, save_dir, exp_file_name, graph=False):
     except Exception as e:
         print("Failed to save json configuration: {}\n{}".format(e, config))
 
+    # Writes the model weights
     try:
         w = model.get_weights()
         np.save("weights", w)
     except Exception as e:
         print("Failed to save model weights (numpy): {}".format(e))
 
-    """try:
-        model.save_weights("weights.h5", overwrite=True)
-    except Exception as e:
-        print("Failed to save model weights (hdf5): {}".format(e))"""
-
-    if graph:
-        model1 = load_model("ttHLep/U_1to1")
-        h_file, data = ds.load_dataset("ttHLep", "Unsorted_Large/transformed")
-        gr.output_distro(model1, data, subplot=221, labels=["Default Bkg", "Default Sig"])
-        gr.output_distro(model, data, subplot=222, labels=["Supernet Bkg", "Supernet Sig"])
-        gr.overlay_distro(model1, model, data, category="background", labels=["Default", "Supernet"], subplot=223)
-        gr.overlay_distro(model1, model, data, labels=["Default", "Supernet"], subplot=224)
-        """gr.s_b(exp)
-        gr.auc(exp)
-        gr.correct(exp)
-        gr.accuracy(exp)"""
-        plt.tight_layout()
-        plt.savefig("{}{}{}.png".format(save_dir, os.sep, exp.description), format="png")
-        plt.clf()
-
-    print("Saved the model data{}".format(" and graph" if graph else '') + " to {}\n".format(save_dir))
+    print("Saved the model data to {}\n".format(save_dir))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

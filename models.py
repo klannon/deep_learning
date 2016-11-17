@@ -4,8 +4,7 @@ import datetime, os, sys, time, argparse
 # Need Keras >= 1.0.5
 import theano.tensor as T
 import theano
-import json
-theano.config.traceback.limit = 20
+theano.config.traceback.limit = 20 # Sets the error traceback length
 from keras.layers import Dense, Dropout, Input, Merge, merge, Flatten
 from keras.engine.topology import Layer
 from keras.models import Sequential, model_from_json, Model
@@ -13,22 +12,26 @@ from keras.optimizers import Adam
 from keras.regularizers import l1, l2
 import keras.backend as K
 
-import deep_learning.protobuf as pb
 import deep_learning.utils.dataset as ds
 from deep_learning.utils import progress, convert_seconds
 from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
-import deep_learning.utils.transformations as tr
-import deep_learning.utils.stats as st
-import deep_learning.utils.graphs as gr
-import deep_learning.utils.archive as ar
-import matplotlib.pyplot as plt
-from math import ceil
-from time import clock
 import numpy as np
-from deep_learning.utils import E
 
 def load_model(exp_name):
+    """
+    Loads a model from an experiment and returns the model.
+
+    Parameters
+    ----------
+    exp_name <string> : a forward-slash separated string for the experiment name i.e. <dataset>/<experiment>
+
+    Returns
+    -------
+    model <Keras.engine.topology.Model> : a Keras Model instance as defined in the cfg.json of
+                                         the experiment that is being loaded.
+
+    """
     data, name = exp_name.split('/')
     exp_dir = ds.get_path_to_dataset(data) + os.sep + name +os.sep
     with open(exp_dir+"cfg.json") as json:
@@ -37,11 +40,22 @@ def load_model(exp_name):
     return model
 
 class Supernet(Model):
+    """
+    This is Supernet. Supernet uses a permutation generator linked to a pre-trained model on correctly assigned
+    data and then a flattening layer and finally a regular feed forward network.
+    """
     def __init__(self, config, exp):
+        """
+
+        Parameters
+        ----------
+        config : A configuration diction is needed. These can be generated from ...
+        exp : A protobuf experiment object as generated in ...
+        """
         inputs = [Input(shape=(44,), name="Event Permutation {}".format(i)) for i in xrange(840)]
 
         sorted_model = Sequential(name="Sorted Model")
-        for ix, layer in enumerate(load_model("ttHLep/S_1to1_small").layers[:-1]):
+        for ix, layer in enumerate(load_model("ttHLep/CAoptimized").layers[:-1]):
             layer.trainable = False
             sorted_model.add(layer)
             sorted_model.layers[ix].set_weights(layer.get_weights())

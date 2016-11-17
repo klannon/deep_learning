@@ -1,6 +1,6 @@
 """
 This module contains functions for loading data from and writing data
-to .npz files
+to .h5 files
 """
 from __future__ import division
 import json, math, os
@@ -66,11 +66,11 @@ def make_one_hot(labels, y_min=None, y_max=None):
 
     Parameters
     ----------
-    labels : list of dataset labels to be encoded
+    labels <list | numpy.ndarray> : list of dataset labels to be encoded
 
     Returns
     -------
-    labels_one_hot : one hot encoding of labels
+    labels_one_hot <numpy.ndarray> : one hot encoding of labels
     """
     if type(labels) is np.float32:
         nrows = 1
@@ -88,7 +88,20 @@ def make_one_hot(labels, y_min=None, y_max=None):
 
     return labels_one_hot
 
+# NO HDF5
 def augment(dataset, format, shift_size):
+    """
+
+    Parameters
+    ----------
+    dataset :
+    format :
+    shift_size :
+
+    Returns
+    -------
+
+    """
     shift_size *= (math.pi/180.0)
     num_shifts = int(2*math.pi / shift_size)
     x_train, y_train, x_test, y_test = ds.load_dataset(dataset, format)
@@ -107,23 +120,20 @@ def augment(dataset, format, shift_size):
 
 # HDF5
 def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
-    """ converts a series of text files into a single .npz archive
+    """ converts a series of text files into a single hdf5 archive
     create_archive takes the name of a dataset and the
     format that the data is in, loads the config file
     from the dataset's directory, loads the right text files, and saves
-    the training and testing data as numpy arrays in a single .npz
-    file. The data is normalized and its variance is set to unity
-    before saving, but the data will be randomized when it is loaded
-    because otherwise we would be using the same "random" ordering of
-    the data each time we train a network on the dataset
+    the training and testing data as numpy arrays in a single hdf5
+    file.
 
     Parameters
     ----------
-    dataset_name : name of the dataset (directory) to look for a
+    dataset_name <string> : name of the dataset (directory) to look for a
     configuration file in
 
-    format : name of the format that you want to
-    build a .npz archive for
+    format <string> : name of the format that you want to
+    build a hdf5 archive for
 
     Notes
     -----
@@ -238,7 +248,18 @@ def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
     h_file.close()
 
 def save_ratios(dataset, ratios, buffer=1000):
+    """
+    Divides a certain dataset into subsets of data with certain ratios of backgrond to signal. For a ratio list of
+    length n, the counting index, i, for the background starts from index 0, and the counting index, j, for the signal
+    starts at n. The ratio for each iteration is then i to j (i/j). Generates a temporary file to accomplish this.
 
+    Parameters
+    ----------
+    dataset <string> : the name of the dataset (/-separated)
+    ratios <list> : a list of integers that define ratios of background to signal.
+    buffer <int> : an integer defining the number of data points to load into memory at a time.
+
+    """
     ratios = [ratios] if type(ratios) is str else ratios
     ratios = map(lambda x: map(float, x.split(':')), ratios)
     data = dataset.split('/')[0]
@@ -525,6 +546,24 @@ def permutate_individual_sorted(dataset):
     np.savez(output_path, x_train=sorted_train_x, x_test=sorted_test_x, y_train=sorted_train_y, y_test=sorted_test_y)
 
 def add_group_hdf5(save_path, group, expected_shapes, where='/', names=None):
+    """
+    Adds a new group to an HDF5 archive, with the x train, y train, x test, and y test separated. The expected_shapes
+    should be a list of length 4, one shape that matches to each of these data subsets, unless you override the name
+    parameters.
+
+    Parameters
+    ----------
+    save_path <string> : The physical path to the archive file
+    group <string> : The name for the group you are adding
+    expected_shapes <list> : A list of expected shapes for the data that will be added here. It doesn't have to be exact
+    where <string> : A the root hierarchical path that you want to add the group to
+    names <list> : A list of strings for the names of the subsets of the groups
+
+    Returns
+    -------
+    hdf5_file, [data] : The HDF5 file that was opened and a list of arrays for each of the datasets that were added.
+
+    """
     names = names if names else ["x_train", "y_train", "x_test", "y_test"]
     hdf5_file = tables.open_file(save_path, mode='a')
     h_comp = tables.Filters(complevel=5, complib='blosc')
@@ -539,10 +578,35 @@ def add_group_hdf5(save_path, group, expected_shapes, where='/', names=None):
     return hdf5_file, h_data
 
 def remove_group_hdf5(save_path, group, where='/', recursive=True):
+    """
+    Removes a certain group from a dataset.
+
+    Parameters
+    ----------
+    save_path <string> : The physical path to the archive file
+    group <string> : The name for the group you are adding
+    where <string> : A the root hierarchical path that you want to add the group to
+    recursive <bool> : Whether to remove all sub-groups or not
+
+    """
     hdf5_file = tables.open_file(save_path, mode='a')
     hdf5_file.remove_node(where+group, recursive=recursive)
+    hdf5_file.flush()
+    hdf5_file.close()
 
 def add_transformed(save_path, group, buffer=1000, where='/'):
+    """
+    Takes a group and normalizes it for training. This is done quietly and only transformed groups are used for
+    training networks.
+
+    Parameters
+    ----------
+    save_path <string> : The physical path to the archive file
+    group <string> : The name for the group you are adding
+    buffer <int> : an integer defining the number of data points to load into memory at a time.
+    where <string> : A the root hierarchical path that you want to add the group to
+
+    """
     hdf5_file = tables.open_file(save_path, mode='a')
     parent = hdf5_file.get_node(where+group)
     data = (parent.x_train, parent.y_train, parent.x_test, parent.y_test)
