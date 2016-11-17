@@ -5,7 +5,7 @@ import deep_learning.utils.dataset as ds
 import deep_learning.utils.transformations as tr
 import deep_learning.utils as ut
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from numpy import trapz
 from math import ceil
 
@@ -80,12 +80,12 @@ def AUC(model, data, datapoints=20, save='', experiment_epoch=None):
             point.signal = e_s[i]
             point.background = e_b[i]
             point.cutoff = cutoff
-    if save:
+    """if save:
         plt.plot(e_b, e_s)
         plt.title("Efficiency Curve")
         plt.ylabel("Signal Efficiency")
         plt.xlabel("Background Inefficiency")
-        plt.savefig(save, format="png")
+        plt.savefig(save, format="png")"""
     return trapz(e_s,e_b)
 
 # ""

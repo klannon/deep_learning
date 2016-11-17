@@ -26,9 +26,6 @@ Installing:
         <ul>
             <li><a href="http://keras.io/">Keras</a>: <code>pip install keras</code> Deep learning library used for designing/executing experiments</li>
             <li><a href="https://developers.google.com/protocol-buffers/">Google Protocol Buffers</a>: <code>pip install protobuf==3.0.0b2</code> Data serialization library used to save the results of Keras experiments in an intelligible format</li>
-            <li><a href="https://plot.ly/">Plotly</a>: <code>pip install plotly</code> Graphing library used by the visualization dashboard to plot the results of experiments</li>
-            <li><a href="http://flask.pocoo.org/">Flask</a>: <code>pip install flask</code> Web application framework used to write the visualization dashboard</li>
-            <li><a href="http://scikit-learn.org/stable/index.html">Scikit-learn</a>: <code>pip install scikit-learn</code> Library we use to normalize batches of data</li>
             <li><a href="http://www.pytables.org/downloads.html">PyTables</a>: <code>pip install tables</code> Library we use to store and access arrays of data very efficiently, even if it exceeds your RAM</li>
         </ul>
         Note: If you want to visualize the results of the networks you train, you can run the script "run_dashboard.py" in deep_learning/dashboard (<code>python run_dashboard.py</code>) to launch a web application that will let you visualize the results of all the networks you've trained!  More features coming soon!
