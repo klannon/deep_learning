@@ -82,7 +82,7 @@ def make_one_hot(labels, y_min=None, y_max=None):
     num_classes = int((y_max - y_min) + 1)
     labels_one_hot = np.zeros((nrows, num_classes))
     for i in xrange(nrows):
-        class_index = labels[i] - y_min # where in the sequence of
+        class_index = int(labels[i] - y_min) # where in the sequence of
         # classes (from y_min to y_max) labels[i] is
         labels_one_hot[i, class_index] = 1
 
@@ -142,7 +142,7 @@ def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
     directory.
     """
     path_dict = read_config_file(dataset_name, format)
-    output_path = os.path.join(ds.get_path_to_dataset(dataset_name), "{}.hdf5".format(dataset_name))
+    output_path = os.path.join(ds.get_path_to_dataset(dataset_name), "{}.h5".format(dataset_name))
 
     if "train_path" in path_dict:
         train_len, train_cols = get_file_len_and_shape(path_dict["train_path"])
@@ -272,7 +272,7 @@ def save_ratios(dataset, ratios, buffer=1000):
     TEST_UPPER_LIMIT = int(1.5 * bkg_test) if bkg_test < sig_test else int(1.5 * sig_test)
     TRAIN_UPPER_LIMIT = int(1.5 * bkg_train) if bkg_train < sig_train else int(1.5 * sig_train)
 
-    temp_h_file, temp_h_data = add_group_hdf5(".deep_learning.temp.hdf5", "Temp",
+    temp_h_file, temp_h_data = add_group_hdf5(".deep_learning.temp.h5", "Temp",
                                     [(bkg_train, x_train.shape[1]),
                                      (bkg_train, y_train.shape[1]),
                                      (sig_train, x_train.shape[1]),
@@ -335,7 +335,7 @@ def save_ratios(dataset, ratios, buffer=1000):
 
         print "Creating ratio {:d}/{:d} ...".format(*map(int, rat))
 
-        h_file, h_data = add_group_hdf5(ds.get_path_to_dataset(data)+os.sep+data+".hdf5",
+        h_file, h_data = add_group_hdf5(ds.get_path_to_dataset(data)+os.sep+data+".h5",
                                         "{}to{}".format(*map(int, rat)),
                                         [(TRAIN_UPPER_LIMIT, x_train.shape[1]),
                                          (TRAIN_UPPER_LIMIT, y_train.shape[1]),
@@ -425,7 +425,7 @@ def save_ratios(dataset, ratios, buffer=1000):
 
     main_file.close()
     temp_h_file.close()
-    os.remove(".deep_learning.temp.hdf5")
+    os.remove(".deep_learning.temp.h5")
 
 # DEPRECATED, WON'T WORK
 def _save_by_jet_num(dataset, num_jets):
