@@ -163,7 +163,8 @@ def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
     elif "background_path" in path_dict:
         bkg_len, bkg_cols = get_file_len_and_shape(path_dict["background_path"])
         sig_len, sig_cols = get_file_len_and_shape(path_dict["signal_path"])
-        n_labels = 2
+        assert sig_cols[0] == bkg_cols[0] # the background and signal should have the same shape
+        n_labels = 1 + bkg_cols[1]
 
         total_len = bkg_len+sig_len
         bkg_read_amt = int(bkg_len*buffer/total_len)
@@ -251,7 +252,7 @@ def save_ratios(dataset, ratios, buffer=1000):
     """
     Divides a certain dataset into subsets of data with certain ratios of backgrond to signal. For a ratio list of
     length n, the counting index, i, for the background starts from index 0, and the counting index, j, for the signal
-    starts at n. The ratio for each iteration is then i to j (i/j). Generates a temporary file to accomplish this.
+    starts at n-1. The ratio for each iteration is then i to j (i/j). Generates a temporary file to accomplish this.
 
     Parameters
     ----------
