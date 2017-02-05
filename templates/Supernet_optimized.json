@@ -1,0 +1,17 @@
+{
+  "network": "supernet",
+  "learning_rate": 0.001,
+  "batch_size": 256,
+  "layers": 5,
+  "max_epochs": false,
+  "nodes": 50,
+  "timeout": false,
+  "monitor_fraction": 0,
+  "save_freq": 5,
+  "save_name": false,
+  "run": false,
+  "rise": false,
+  "config": false,
+  "split": false,
+  "defaults": false
+}

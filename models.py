@@ -6,7 +6,7 @@ import theano.tensor as T
 import theano
 theano.config.traceback.limit = 20 # Sets the error traceback length
 from theano.tensor.shared_randomstreams import RandomStreams
-from keras.layers import Dense, Dropout, Input, Merge, merge, Flatten
+from keras.layers import Dense, Dropout, Input, Merge, merge, Lambda
 from keras.engine.topology import Layer
 from keras.models import Sequential, model_from_json, Model
 from keras.optimizers import Adam
@@ -15,8 +15,8 @@ import keras.backend as K
 
 import deep_learning.utils.dataset as ds
 from deep_learning.utils import progress, convert_seconds
-from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
+import deep_learning.utils.archive as ar
 import numpy as np
 from deep_learning.utils import E
 
@@ -159,3 +159,104 @@ class Permute(Layer):
 
     def compute_mask(self, input, input_mask=None):
         return None
+
+def build_default(config, exp):
+    """
+    This will build a basic feed forward neural network with equally sized hidden layers, rectified linear activation
+    functions, and then a sigmoid output.
+
+    Parameters
+    ----------
+    config <dict> : A dictionary of configurable parameters as defined in the --help switch.
+    exp <deep_learning.protobuf.Experiment> : A custom Protobuf object to store the experiment data within.
+
+    Returns
+    -------
+    model <Keras.models.Sequential> : A fully constructed Keras neural network (Feed Forward) that is ready to train.
+    """
+
+    model = Sequential()
+
+    layer = exp.structure.add()
+    layer.type = 0
+    layer.input_dimension = 44
+    layer.output_dimension = config["nodes"]
+
+    model.add(Dense(config["nodes"], input_dim=44, activation="relu", W_regularizer=l1(0.001)))
+    #model.add(Dropout(0.2))
+
+    for l in xrange(config["layers"]-1):
+        layer = exp.structure.add()
+        layer.type = 0
+        layer.input_dimension = config["nodes"]
+        layer.output_dimension = config["nodes"]
+        model.add(Dense(config["nodes"], activation="relu", W_regularizer=l1(0.001)))
+    #    model.add(Dropout(0.2))
+
+    layer = exp.structure.add()
+    layer.type = 1
+    layer.input_dimension = config["nodes"]
+    layer.output_dimension = 2
+    model.add(Dense(output_dim=2, activation="softmax"))
+
+    return model
+
+def build_supernet(config, exp):
+    """
+    This will build a special neural network that we have dubbed "Supernet". Supernet consists of a permutation layer
+    that will produce all feasible permutations of the input data. Then we load an optimized model trained on data that
+    has been properly sorted and apply that model to each of the permuted inputs. Finally, we train a new neural
+    network on the outputs of the optimized (and frozen) network.
+
+    Parameters
+    ----------
+    config <dict> : A dictionary of configurable parameters as defined in the --help switch.
+    exp <deep_learning.protobuf.Experiment> : A custom Protobuf object to store the experiment data within.
+
+    Returns
+    -------
+    model <Keras.models.Sequential> : A fully constructed Keras neural network (Feed Forward) that is ready to train.
+    """
+
+    perms = list(ar.gen_permutations(2,7,2))
+
+    def clean_outputs(x):
+        skip = x.shape[0] // len(perms)
+        out, _ = theano.scan(lambda b, x, skip: K.reshape(x[b::skip], (1, x.shape[1] * len(perms))),
+                             n_steps=skip,
+                             sequences=[T.arange(skip)],
+                             non_sequences=[x, skip])
+        return T.flatten(out, outdim=2)
+
+    inputs = Input(shape=(44,), name="Event Input")
+
+    sorted_model = Sequential(name="Sorted Model")
+    for ix, layer in enumerate(load_model("ttHLep/CAoptimized").layers[:-1]):
+        layer.trainable = False
+        sorted_model.add(layer)
+        sorted_model.layers[ix].set_weights(layer.get_weights())
+
+    o = sorted_model(Permute(44, perms, exp.batch_size, name="Permutator")(inputs))
+
+    o = Lambda(clean_outputs,
+               output_shape=lambda s: (s[0] // len(perms), 20 * len(perms)),
+               name="Filter")(o)
+
+    ### SUPER-NET CLASSIFIER EXTENSION
+    extended_net = Sequential(name="ReLu Network")
+    extended_net.add(Dense(config["nodes"], input_dim=16800, activation="relu"))
+    for l in xrange(config["layers"] - 1):
+        layer = exp.structure.add()
+        layer.type = 0
+        layer.input_dimension = config["nodes"]
+        layer.output_dimension = config["nodes"]
+        extended_net.add(Dense(config["nodes"], activation="relu"))
+    soft = Dense(2, activation="softmax", name="Classifier (Softmax)")
+
+    o = extended_net(o)
+    o = soft(o)
+
+    return Model(input=inputs, output=o)
+
+networks = {"default": build_default,
+            "supernet": build_supernet}

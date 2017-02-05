@@ -18,118 +18,17 @@ from keras.regularizers import l1, l2
 import deep_learning.protobuf as pb
 import deep_learning.utils.dataset as ds
 from deep_learning.utils import progress, convert_seconds
-from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
 import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
 import deep_learning.utils.archive as ar
-from deep_learning.models import load_model, Permute
+from deep_learning.models import networks
 from math import ceil
 from time import clock
 import numpy as np
 
-def build_default(config, exp):
-    """
-    This will build a basic feed forward neural network with equally sized hidden layers, rectified linear activation
-    functions, and then a sigmoid output.
-
-    Parameters
-    ----------
-    config <dict> : A dictionary of configurable parameters as defined in the --help switch.
-    exp <deep_learning.protobuf.Experiment> : A custom Protobuf object to store the experiment data within.
-
-    Returns
-    -------
-    model <Keras.models.Sequential> : A fully constructed Keras neural network (Feed Forward) that is ready to train.
-    """
-
-    model = Sequential()
-
-    layer = exp.structure.add()
-    layer.type = 0
-    layer.input_dimension = 44
-    layer.output_dimension = config["nodes"]
-
-    model.add(Dense(config["nodes"], input_dim=44, activation="relu", W_regularizer=l1(0.001)))
-    #model.add(Dropout(0.2))
-
-    for l in xrange(config["layers"]-1):
-        layer = exp.structure.add()
-        layer.type = 0
-        layer.input_dimension = config["nodes"]
-        layer.output_dimension = config["nodes"]
-        model.add(Dense(config["nodes"], activation="relu", W_regularizer=l1(0.001)))
-    #    model.add(Dropout(0.2))
-
-    layer = exp.structure.add()
-    layer.type = 1
-    layer.input_dimension = config["nodes"]
-    layer.output_dimension = 2
-    model.add(Dense(output_dim=2, activation="softmax"))
-
-    return model
-
-def build_supernet(config, exp):
-    """
-    This will build a special neural network that we have dubbed "Supernet". Supernet consists of a permutation layer
-    that will produce all feasible permutations of the input data. Then we load an optimized model trained on data that
-    has been properly sorted and apply that model to each of the permuted inputs. Finally, we train a new neural
-    network on the outputs of the optimized (and frozen) network.
-
-    Parameters
-    ----------
-    config <dict> : A dictionary of configurable parameters as defined in the --help switch.
-    exp <deep_learning.protobuf.Experiment> : A custom Protobuf object to store the experiment data within.
-
-    Returns
-    -------
-    model <Keras.models.Sequential> : A fully constructed Keras neural network (Feed Forward) that is ready to train.
-    """
-
-    perms = list(ar.gen_permutations(2,7,2))
-
-    def clean_outputs(x):
-        skip = x.shape[0] // len(perms)
-        out, _ = theano.scan(lambda b, x, skip: K.reshape(x[b::skip], (1, x.shape[1] * len(perms))),
-                             n_steps=skip,
-                             sequences=[T.arange(skip)],
-                             non_sequences=[x, skip])
-        return T.flatten(out, outdim=2)
-
-    inputs = Input(shape=(44,), name="Event Input")
-
-    sorted_model = Sequential(name="Sorted Model")
-    for ix, layer in enumerate(load_model("ttHLep/CAoptimized").layers[:-1]):
-        layer.trainable = False
-        sorted_model.add(layer)
-        sorted_model.layers[ix].set_weights(layer.get_weights())
-
-    o = sorted_model(Permute(44, perms, exp.batch_size, name="Permutator")(inputs))
-
-    o = Lambda(clean_outputs,
-               output_shape=lambda s: (s[0] // len(perms), 20 * len(perms)),
-               name="Filter")(o)
-
-    ### SUPER-NET CLASSIFIER EXTENSION
-    extended_net = Sequential(name="ReLu Network")
-    extended_net.add(Dense(config["nodes"], input_dim=16800, activation="relu"))
-    for l in xrange(config["layers"] - 1):
-        layer = exp.structure.add()
-        layer.type = 0
-        layer.input_dimension = config["nodes"]
-        layer.output_dimension = config["nodes"]
-        extended_net.add(Dense(config["nodes"], activation="relu"))
-    soft = Dense(2, activation="softmax", name="Classifier (Softmax)")
-
-    o = extended_net(o)
-    o = soft(o)
-
-    return Model(input=inputs, output=o)
-
 def build(config=None):
 
-    if config is None:
-        config = set_configurations()
     ##
     # Experiment log set-up
     ##
@@ -148,7 +47,7 @@ def build(config=None):
         exp.description = "{}_{}".format(str(os.getenv("HOST", os.getpid())).split('.')[0],
                                          'x'.join(map(lambda x: hex(int(x))[2:], str(time.time()).split('.'))))
 
-    model = build_supernet(config, exp)
+    model = config["network"](config, exp)
 
     ##
     # Generate the optimization method
@@ -327,6 +226,9 @@ if __name__ == "__main__":
     ##
 
     parser.add_argument("dataset", metavar="Dataset/Format", help="The dataset and format you want separated by a slash")
+    parser.add_argument("-w", "--network",
+                        choices=networks.values(), type=lambda y: networks[y],
+                        help="which network model you would like to build.", default=None)
     parser.add_argument("-r", "--learning_rate", help="learning rate",
                         type=float, default=None)
     parser.add_argument("-b", "--batch_size", help="size of each batch "
@@ -355,13 +257,16 @@ if __name__ == "__main__":
     parser.add_argument("-y", "--rise", help="the percentile increase in accuracy that you expect over this interval",
                         type=lambda y: float(y) if y.isdigit() else float(y[:-1])/100, default=None)
     parser.add_argument("--config", help="train based upon a .cfg file", default=None)
-    parser.add_argument("--defaults", help="run on defaults", action="store_true")
     args = vars(parser.parse_args())
     _temp = args["dataset"].split('/')
     args["dataset"] = _temp[0]
     args["coords"] = '/'.join(_temp[1:])
 
-    defaults = dict(learning_rate=0.001,
+    conf = json.load(open(os.path.dirname(os.path.realpath(__file__))+os.sep+"templates"+os.sep+args["config"]+".json"))\
+        if args["config"] else {}
+
+    defaults = dict(network=networks["default"],
+                    learning_rate=0.001,
                     batch_size=64,
                     layers=2,
                     max_epochs=None,
@@ -372,13 +277,13 @@ if __name__ == "__main__":
                     save_name=None,
                     run=None,
                     rise=None,
-                    config=None,
-                    split=False,
-                    defaults=False)
+                    config=None)
 
     for k,v in args.items():
         if not v:
-            args[k] = defaults[k]
+            args[k] = conf[k] if conf.has_key(k) else defaults[k]
+            if k=="network":
+                args[k] = networks[conf[k]] if conf.has_key(k) else defaults[k]
 
     model, exp, terms = build(args)
     run(model, exp, terms, args["save_freq"])
