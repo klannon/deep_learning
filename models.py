@@ -5,6 +5,7 @@ import datetime, os, sys, time, argparse
 import theano.tensor as T
 import theano
 theano.config.traceback.limit = 20 # Sets the error traceback length
+from theano.tensor.shared_randomstreams import RandomStreams
 from keras.layers import Dense, Dropout, Input, Merge, merge, Flatten
 from keras.engine.topology import Layer
 from keras.models import Sequential, model_from_json, Model
@@ -17,6 +18,7 @@ from deep_learning.utils import progress, convert_seconds
 from deep_learning.utils.configure import set_configurations
 from deep_learning.utils.validate import Validator
 import numpy as np
+from deep_learning.utils import E
 
 def load_model(exp_name):
     """
@@ -103,3 +105,57 @@ class Supernet(Model):
 
         batch_size = self.experiment_config["batch_size"]
 
+class Permute(Layer):
+    def __init__(self, output_dim, permutations, batch_size, **kwargs):
+        self.output_dim = output_dim
+        self.permutations = permutations
+        self.num_p = len(permutations)
+        self.batch_size = batch_size
+        #self.labels = T.zeros((1, self.num_p))
+
+        """def _get_labels(x, labels, num_p):
+            skip = x.shape[0] // num_p
+            srng = RandomStreams()
+            self.indices = srng.permutation(n=num_p, size=(1,))[0]
+            T.set_subtensor(labels[:], T.zeros((1, num_p)))
+            T.set_subtensor(labels[0, 0], 1)
+            T.set_subtensor(labels[0, :], labels[0, self.indices])
+            identity = T.zeros((self.num_p, self.num_p * skip))
+            theano.scan(lambda i, identity, skip: T.set_subtensor(identity[i, i * skip:(i + 1) * skip], [1] * skip),
+                        n_steps=self.num_p,
+                        sequences=[T.arange(self.num_p)],
+                        non_sequences=[identity, skip])
+            return T.dot(labels, identity)"""
+        #x = T.dmatrix()
+        #labels = T.imatrix()
+        #self.get_labels = function([self, x, labels], _get_labels)
+
+        super(Permute, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        self.transforms = [E(p) for p in self.permutations]
+        self.T = K.variable(self.transforms)
+        self.trainable = False
+
+    def call(self, x, mask=None):
+        srng = RandomStreams()
+        self.indices = srng.permutation(n=self.num_p, size=(1,))[0]
+
+        skip = x.shape[0] // self.num_p
+
+        rval = K.concatenate([K.dot(x, self.T[i].transpose()) for i in xrange(self.num_p)], axis=0)
+
+        temp = rval.copy()
+        theano.scan(lambda b, x, skip: T.set_subtensor(rval[b::skip], temp[b::skip][self.indices,]),
+                             n_steps=skip,
+                             sequences=[T.arange(skip)],
+                             non_sequences=[x, skip])
+        #return T.flatten(out, outdim=2)
+
+        return rval
+
+    def get_output_shape_for(self, input_shape):
+        return (self.num_p, self.output_dim)
+
+    def compute_mask(self, input, input_mask=None):
+        return None

@@ -14,5 +14,21 @@
   "Unsorted_Large": {
     "background": "ttjets_unsorted_deeplearn.csv",
     "signal": "ttH_unsorted_deeplearn.csv"
+  },
+  "FullAA": {
+    "background": "ttbackground_ptsorted.csv",
+    "signal": "tth_ptsorted_tree.csv"
+  },
+  "LargeTTbar": {
+    "background": "ttbar_ptsorted_tree.csv",
+    "signal": "tth_ptsorted_tree.csv"
+  },
+  "LargeTTW": {
+    "background": "ttw_ptsorted_tree.csv",
+    "signal": "tth_ptsorted_tree.csv"
+  },
+  "ThreeClass": {
+    "background": "three_class_bkg.csv",
+    "signal": "tth_ptsorted_tree.csv"
   }
 }

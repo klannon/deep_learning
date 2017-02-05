@@ -3,7 +3,6 @@ from __future__ import print_function, division
 import datetime, os, sys, time, argparse
 # Need Keras >= 1.0.5
 import theano.tensor as T
-from theano.tensor.shared_randomstreams import RandomStreams
 import theano
 from theano import function, printing
 import json
@@ -24,80 +23,25 @@ from deep_learning.utils.validate import Validator
 import deep_learning.utils.transformations as tr
 import deep_learning.utils.stats as st
 import deep_learning.utils.archive as ar
+from deep_learning.models import load_model, Permute
 from math import ceil
 from time import clock
 import numpy as np
-from deep_learning.utils import E
 
-def load_model(exp_name):
-    data, name = exp_name.split('/')
-    exp_dir = ds.get_path_to_dataset(data) + os.sep + name +os.sep
-    with open(exp_dir+"cfg.json") as json:
-        model = model_from_json(json.read())
-    model.set_weights(np.load(exp_dir+"weights.npy"))
-    return model
-
-
-class Permute(Layer):
-    def __init__(self, output_dim, permutations, batch_size, **kwargs):
-        self.output_dim = output_dim
-        self.permutations = permutations
-        self.num_p = len(permutations)
-        self.batch_size = batch_size
-        #self.labels = T.zeros((1, self.num_p))
-
-        """def _get_labels(x, labels, num_p):
-            skip = x.shape[0] // num_p
-            srng = RandomStreams()
-            self.indices = srng.permutation(n=num_p, size=(1,))[0]
-            T.set_subtensor(labels[:], T.zeros((1, num_p)))
-            T.set_subtensor(labels[0, 0], 1)
-            T.set_subtensor(labels[0, :], labels[0, self.indices])
-            identity = T.zeros((self.num_p, self.num_p * skip))
-            theano.scan(lambda i, identity, skip: T.set_subtensor(identity[i, i * skip:(i + 1) * skip], [1] * skip),
-                        n_steps=self.num_p,
-                        sequences=[T.arange(self.num_p)],
-                        non_sequences=[identity, skip])
-            return T.dot(labels, identity)"""
-        #x = T.dmatrix()
-        #labels = T.imatrix()
-        #self.get_labels = function([self, x, labels], _get_labels)
-
-        super(Permute, self).__init__(**kwargs)
-
-    def build(self, input_shape):
-        self.transforms = [E(p) for p in self.permutations]
-        self.T = K.variable(self.transforms)
-        self.trainable = False
-
-    def call(self, x, mask=None):
-        srng = RandomStreams()
-        self.indices = srng.permutation(n=self.num_p, size=(1,))[0]
-
-        skip = x.shape[0] // self.num_p
-
-        rval = K.concatenate([K.dot(x, self.T[i].transpose()) for i in xrange(self.num_p)], axis=0)
-
-        temp = rval.copy()
-        theano.scan(lambda b, x, skip: T.set_subtensor(rval[b::skip], temp[b::skip][self.indices,]),
-                             n_steps=skip,
-                             sequences=[T.arange(skip)],
-                             non_sequences=[x, skip])
-        #return T.flatten(out, outdim=2)
-
-        return rval
-
-    def get_output_shape_for(self, input_shape):
-        return (self.num_p, self.output_dim)
-
-    def compute_mask(self, input, input_mask=None):
-        return None
-
-### OLD MODEL
 def build_default(config, exp):
-    ##
-    # Construct the network
-    ##
+    """
+    This will build a basic feed forward neural network with equally sized hidden layers, rectified linear activation
+    functions, and then a sigmoid output.
+
+    Parameters
+    ----------
+    config <dict> : A dictionary of configurable parameters as defined in the --help switch.
+    exp <deep_learning.protobuf.Experiment> : A custom Protobuf object to store the experiment data within.
+
+    Returns
+    -------
+    model <Keras.models.Sequential> : A fully constructed Keras neural network (Feed Forward) that is ready to train.
+    """
 
     model = Sequential()
 
@@ -125,23 +69,22 @@ def build_default(config, exp):
 
     return model
 
-### SORTING NET ( not updated )
-def build_sorting_net(config, exp):
-    inputs = Input(shape=(44,), name="Event Input")
-    extended_net = Sequential(name="ReLu Network")
-    extended_net.add(Dense(50, input_dim=44, activation="relu", W_regularizer=l1(0.001)))
-    extended_net.add(Dense(50, activation="relu", W_regularizer=l1(0.001)))
-    extended_net.add(Dense(50, activation="relu", W_regularizer=l1(0.001)))
-    extended_net.add(Dense(50, activation="relu", W_regularizer=l1(0.001)))
-    extended_net.add(Dense(50, activation="relu", W_regularizer=l1(0.001)))
-    soft = Dense(2, activation="softmax", name="Classifier (Softmax)")
-    o = extended_net(inputs)
-    o = soft(o)
-
-    return Model(input=inputs, output=o)
-
-### SUPER NET
 def build_supernet(config, exp):
+    """
+    This will build a special neural network that we have dubbed "Supernet". Supernet consists of a permutation layer
+    that will produce all feasible permutations of the input data. Then we load an optimized model trained on data that
+    has been properly sorted and apply that model to each of the permuted inputs. Finally, we train a new neural
+    network on the outputs of the optimized (and frozen) network.
+
+    Parameters
+    ----------
+    config <dict> : A dictionary of configurable parameters as defined in the --help switch.
+    exp <deep_learning.protobuf.Experiment> : A custom Protobuf object to store the experiment data within.
+
+    Returns
+    -------
+    model <Keras.models.Sequential> : A fully constructed Keras neural network (Feed Forward) that is ready to train.
+    """
 
     perms = list(ar.gen_permutations(2,7,2))
 
@@ -202,17 +145,14 @@ def build(config=None):
     if config["save_name"]:
         exp.description = config["save_name"]
     else:
-        exp.description = "{}_{}".format(str(os.getenv("HOST",
-                                                       os.getpid())).split('.')[0],
+        exp.description = "{}_{}".format(str(os.getenv("HOST", os.getpid())).split('.')[0],
                                          'x'.join(map(lambda x: hex(int(x))[2:], str(time.time()).split('.'))))
 
-
-    model = build_default(config, exp)
+    model = build_supernet(config, exp)
 
     ##
     # Generate the optimization method
     ##
-
     opt = pb.Adam()
     opt.lr = config["learning_rate"]
     exp.adam.MergeFrom(opt)
@@ -220,7 +160,6 @@ def build(config=None):
     ##
     # Compile the model
     ##
-
     model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=opt.lr), metrics=['accuracy'])
 
     if not config.has_key("terms"):
@@ -230,8 +169,6 @@ def build(config=None):
                                             x=config["run"]))
 
     return model, exp, config["terms"]
-
-
 
 def run(model, exp, terms, save_freq=5, data=None):
 
@@ -301,7 +238,7 @@ def run(model, exp, terms, save_freq=5, data=None):
         print("Calculating Sig")
         epoch.s_b = st.significance(model, data)
         print("Finished {:.2f}".format(clock() - timer))
-        timer = clock()
+        #timer = clock()
         #print("Calculating AUC {:.2f}".format(clock()))
         #epoch.auc = st.AUC(model, data, experiment_epoch=epoch)
         #print("Finished {:.2f}".format(clock() - timer))
