@@ -180,24 +180,24 @@ def build_default(config, exp):
     layer = exp.structure.add()
     layer.type = 0
     layer.input_dimension = 44
-    layer.output_dimension = config["nodes"]
+    layer.output_dimension = config["layers"][0]["nodes"]
 
-    model.add(Dense(config["nodes"], input_dim=44, activation="relu", W_regularizer=l1(0.001)))
+    model.add(Dense(config["layers"][0]["nodes"], input_dim=44, activation="relu", W_regularizer=l1(0.001)))
     #model.add(Dropout(0.2))
 
-    for l in xrange(config["layers"]-1):
+    for l in xrange(len(config["layers"])-1):
         layer = exp.structure.add()
         layer.type = 0
-        layer.input_dimension = config["nodes"]
-        layer.output_dimension = config["nodes"]
-        model.add(Dense(config["nodes"], activation="relu", W_regularizer=l1(0.001)))
+        layer.input_dimension = config["layers"][l]["nodes"]
+        layer.output_dimension = config["layers"][l+1]["nodes"]
+        model.add(Dense(config["layers"][l+1]["nodes"], activation="relu", W_regularizer=l1(0.001)))
     #    model.add(Dropout(0.2))
 
     layer = exp.structure.add()
     layer.type = 1
-    layer.input_dimension = config["nodes"]
-    layer.output_dimension = 2
-    model.add(Dense(output_dim=2, activation="softmax"))
+    layer.input_dimension = config["layers"][-1]["nodes"]
+    layer.output_dimension = 3
+    model.add(Dense(output_dim=3, activation="softmax"))
 
     return model
 
@@ -244,13 +244,13 @@ def build_supernet(config, exp):
 
     ### SUPER-NET CLASSIFIER EXTENSION
     extended_net = Sequential(name="ReLu Network")
-    extended_net.add(Dense(config["nodes"], input_dim=16800, activation="relu"))
-    for l in xrange(config["layers"] - 1):
+    extended_net.add(Dense(config["layers"][0]["nodes"], input_dim=16800, activation="relu"))
+    for l in xrange(len(config["layers"]) - 1):
         layer = exp.structure.add()
         layer.type = 0
-        layer.input_dimension = config["nodes"]
-        layer.output_dimension = config["nodes"]
-        extended_net.add(Dense(config["nodes"], activation="relu"))
+        layer.input_dimension = config["layers"][l]["nodes"]
+        layer.output_dimension = config["layers"][l + 1]["nodes"]
+        extended_net.add(Dense(config["layers"][l + 1]["nodes"], activation="relu", W_regularizer=l1(0.001)))
     soft = Dense(2, activation="softmax", name="Classifier (Softmax)")
 
     o = extended_net(o)

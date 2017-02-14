@@ -126,17 +126,17 @@ def run(model, exp, terms, save_freq=5, data=None):
         epoch.train_loss, epoch.train_accuracy = model.evaluate_generator(((x_train[i*exp.batch_size:(i+1)*exp.batch_size],
                                                                            y_train[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(num_batches)),
                                                                           num_batches, max_q_size=min((num_batches//2, 10)))
-        print("Finished {:.2f}s".format(clock()-timer))
+        #print("Finished {:.2f}s".format(clock()-timer))
         timer = clock()
         print("Evaluating Test")
         epoch.test_loss, epoch.test_accuracy = model.evaluate_generator(((x_test[i*exp.batch_size:(i+1)*exp.batch_size],
                                                                            y_test[i*exp.batch_size:(i+1)*exp.batch_size]) for i in xrange(int(ceil(x_test.shape[0]/exp.batch_size)))),
                                                                         int(ceil(x_test.shape[0] / exp.batch_size)), max_q_size=min((int(ceil(x_test.shape[0] / exp.batch_size))//2, 10)))
-        print("Finished {:.2f}s".format(clock() - timer))
+        #print("Finished {:.2f}s".format(clock() - timer))
         timer = clock()
         print("Calculating Sig")
         epoch.s_b = st.significance(model, data)
-        print("Finished {:.2f}".format(clock() - timer))
+        #print("Finished {:.2f}".format(clock() - timer))
         #timer = clock()
         #print("Calculating AUC {:.2f}".format(clock()))
         #epoch.auc = st.AUC(model, data, experiment_epoch=epoch)
@@ -146,14 +146,14 @@ def run(model, exp, terms, save_freq=5, data=None):
             epoch.matrix.add().columns.extend(r)
         print("Making CFM")
         matrix = st.confusion_matrix(model, data, offset='\t ')
-        print("Finished {:.2f}".format(clock() - timer))
+        #print("Finished {:.2f}".format(clock() - timer))
         epoch.num_seconds = clock() - t
         timer=clock()
         print("Getting output")
         output = st.get_output_distro(model, data)
         epoch.output.background.extend(output["background"])
         epoch.output.signal.extend(output["signal"])
-        print("Finished {:.2f}".format(clock() - timer))
+        #print("Finished {:.2f}".format(clock() - timer))
         # Print statistics
         print("\t Train Accuracy: {:.3f}\tTest Accuracy: {:.3f}".format(epoch.train_accuracy, epoch.test_accuracy))
         if valid.update_w():
@@ -228,19 +228,16 @@ if __name__ == "__main__":
     parser.add_argument("dataset", metavar="Dataset/Format", help="The dataset and format you want separated by a slash")
     parser.add_argument("-w", "--network",
                         choices=networks.values(), type=lambda y: networks[y],
-                        help="which network model you would like to build.", default=None)
+                        help="which network model you would like to build", default=None)
     parser.add_argument("-r", "--learning_rate", help="learning rate",
                         type=float, default=None)
     parser.add_argument("-b", "--batch_size", help="size of each batch "
                                                   + "(subset of training set)", type=int, default=None)
     parser.add_argument("-l", "--layers",
-                        help="number of hidden layers in the network",
-                        type=int, default=None)
+                        help="a list of dictionaries describing the network layers. There are examples in /templates",
+                        type=list, default=None)
     parser.add_argument("-e", "--max_epochs",
                         help="number of epochs to run for", type=int,
-                        default=None)
-    parser.add_argument("-n", "--nodes",
-                        help="number of nodes per layer", type=int,
                         default=None)
     parser.add_argument("-t", "--timeout",
                         help="how long it should train in minutes",
@@ -268,9 +265,8 @@ if __name__ == "__main__":
     defaults = dict(network=networks["default"],
                     learning_rate=0.001,
                     batch_size=64,
-                    layers=2,
+                    layers=[{"nodes": 50}]*5,
                     max_epochs=None,
-                    nodes=20,
                     timeout=None,
                     monitor_fraction=0,
                     save_freq=5,

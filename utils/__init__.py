@@ -113,6 +113,18 @@ def get_file_len_and_shape(fname, delim=','):
     return i + 1, [cols, len(s)]
 
 def sum_cols(array, buffer=64):
+    """
+    Returns a tuple with the sum of each column.
+
+    Parameters
+    ----------
+    array
+    buffer
+
+    Returns
+    -------
+
+    """
     return tuple([sum(
         [array[j * buffer:(j + 1) * buffer, i].sum() for j in xrange(int(ceil(array.shape[0] / buffer)))])
            for i in xrange(array.shape[1])])

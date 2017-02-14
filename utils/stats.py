@@ -18,39 +18,65 @@ BACKGROUND_SAMPLE = 25811
 SIGNAL_SAMPLE = 42374
 SAMPLES = (BACKGROUND_SAMPLE, SIGNAL_SAMPLE)
 
-MATRIX = """
-{0}      Predicted
-{0}   ==================
-{0}R  || {1:02.1f} || {2:02.1f} || TTBar
-{0}e  ==================
-{0}a  || {3:02.1f} || {4:02.1f} || TTHiggs
-{0}l  ==================
-{0}     TTBar   TTHiggs
+CFM = """
+{0}Sum over rows: Actual Class
+{0}Sum over columns: Predicted Class
+{0}Confusion Matrix:
+{0}{1}
 """
 
-def count_filter(model, criteria, (x_test, y_test), batch_size=64, **kwargs):
+class MATRIX(object):
+    def __init__(self, matrix, offset=''):
+        self.matrix = matrix
+        self.offset = offset
+
+    def __str__(self):
+        return CFM.format(self.offset, ('\n'+self.offset).join([str(row) for row in self.matrix]))
+
+
+def count_filter(model, criteria, (x_test, y_test), batch_size=256, index=False, **kwargs):
+    """
+
+    Parameters
+    ----------
+    model
+    criteria
+    batch_size
+    kwargs
+
+    Returns
+    -------
+    <tuple> : A tuple with the number of events that passed the filter for each class.
+
+    """
     rval = []
-    for i in xrange(int(y_test.shape[0]/batch_size)):
+    for i in xrange(int(ceil(y_test.shape[0]/batch_size))):
         predictions = model.predict([x_test[i*batch_size:(i+1)*batch_size]], **kwargs)
-        bArray = criteria(predictions, y_test[i*batch_size:(i+1)*batch_size])
+        if type(index) is np.ndarray:
+            if index[i*batch_size:(i+1)*batch_size].any():
+                predictions = predictions[index[i*batch_size:(i+1)*batch_size]]
+                y_temp = y_test[i*batch_size:(i+1)*batch_size][index[i*batch_size:(i+1)*batch_size]]
+            else:
+                continue
+        else:
+            y_temp = y_test[i*batch_size:(i+1)*batch_size]
+        bArray = criteria(predictions, y_temp)
         rval.append(ut.sum_cols(bArray, batch_size))
     return tuple([c.sum() for c in np.array(rval).T])
 
-def num_of_each_cell(model, data, cutoff=0.5):
+def num_of_each_cell(model, data):
     x_train, y_train, x_test, y_test = data
-    num_correct = count_filter(model, lambda p, y: (y > 0) == (p - y > cutoff - 1), (x_test, y_test))
-    num_predicted = count_filter(model, lambda p, y: p > cutoff, (x_test, y_test))
-    test_totals = ut.sum_cols(y_test)
-    ss = num_correct[1]
-    bs = num_predicted[1] - ss
-    sb = test_totals[1]-ss
-    bb = test_totals[0]-bs
-    return np.array([[bb, bs],
-                     [sb, ss]])
+    matrix = []
+    for i in xrange(y_test.shape[1]):
+        index = (y_test[:,i] > 0).flatten()
+        num_predicted = count_filter(model, lambda p, y: np.vstack(map(lambda x: x==max(x), p)), (x_test, y_test),
+                                     index=index)
+        matrix.append(num_predicted)
+    return np.array(matrix)
 
 # Need to generalize for more categories
-def efficiencies(model, data, cutoff=0.5, over_rows=True, **kwargs):
-    matrix = num_of_each_cell(model, data, cutoff)
+def efficiencies(model, data, over_rows=True, **kwargs):
+    matrix = num_of_each_cell(model, data)
     rval = np.array(map(lambda row: [x / sum(row) for x in row], matrix if over_rows else matrix.T))
     return rval if over_rows else rval.T
 
@@ -74,7 +100,7 @@ def AUC(model, data, datapoints=20, save='', experiment_epoch=None):
     e_s = np.zeros(datapoints)
     for i in xrange(datapoints):
         cutoff = 1-i*(1/datapoints)
-        e_b[i], e_s[i] = efficiencies(model, data, cutoff)[:,1]
+        e_b[i], e_s[i] = efficiencies(model, data)[:,1]
         if experiment_epoch:
             point = experiment_epoch.curve.add()
             point.signal = e_s[i]
@@ -90,8 +116,9 @@ def AUC(model, data, datapoints=20, save='', experiment_epoch=None):
 
 # ""
 def confusion_matrix(model, data, offset='', **kwargs):
-    eff = efficiencies(model, data, **kwargs)
-    return MATRIX.format(offset, *(eff*100).flatten())
+    #eff = efficiencies(model, data, **kwargs)
+    #return MATRIX.format(offset, *(eff*100).flatten())
+    return MATRIX(num_of_each_cell(model, data), offset=offset)
 
 def get_output_distro(model, data, batch_size=64, nbins=50):
     x_train, y_train, x_test, y_test = data
@@ -109,15 +136,3 @@ def get_output_distro(model, data, batch_size=64, nbins=50):
         frequencies["signal"].append(((bins[i] <= signal) & (signal <= bins[i + 1])).sum())
 
     return frequencies
-
-
-if __name__ == "__main__":
-    from deep_learning.trainNN import load_model
-    model = load_model("ttHLep/U_Optimal")
-    x_train, y_train, x_test, y_test = ds.load_dataset("ttHLep", "Unsorted")
-    x_train, x_test = tr.transform(x_train, x_test)
-    data = (x_train, y_train, x_test, y_test)
-    print significance(model, data)
-    print AUC(model, data)
-    print confusion_matrix(model, data)
-    print confusion_matrix(model, data, over_rows=False)

@@ -169,7 +169,6 @@ def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
         total_len = bkg_len+sig_len
         bkg_read_amt = int(bkg_len*buffer/total_len)
         sig_read_amt = int(sig_len*buffer/total_len)
-        assert bkg_cols == sig_cols # Bkg and sig files should have the same data shape
         h_file, h_data = add_group_hdf5(output_path,
                                         format,
                                         zip([round(total_len*train_fraction)] * 2 + [round(total_len*(1-train_fraction))] * 2,
