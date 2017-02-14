@@ -1,0 +1,16 @@
+{
+  "network": "default",
+  "learning_rate": 0.001,
+  "batch_size": 64,
+  "layers": [{"nodes": 80},{"nodes": 80},{"nodes": 80}],
+  "max_epochs": false,
+  "timeout": false,
+  "monitor_fraction": 0,
+  "save_freq": 1,
+  "save_name": false,
+  "run": false,
+  "rise": false,
+  "config": false,
+  "split": false,
+  "defaults": false
+}

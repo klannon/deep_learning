@@ -1,6 +1,6 @@
 """
 This module contains functions for loading data from and writing data
-to .npz files
+to .h5 files
 """
 from __future__ import division
 import json, math, os
@@ -9,6 +9,7 @@ import tables
 import deep_learning.utils.dataset as ds
 import deep_learning.utils.transformations as tr
 from deep_learning.utils import verify_angle, get_file_len_and_shape, sum_cols
+from deep_learning.utils import gen_permutations, E
 
 def read_config_file(dataset_name, format):
     """ Reads a json file containing the locations of train/test data
@@ -65,11 +66,11 @@ def make_one_hot(labels, y_min=None, y_max=None):
 
     Parameters
     ----------
-    labels : list of dataset labels to be encoded
+    labels <list | numpy.ndarray> : list of dataset labels to be encoded
 
     Returns
     -------
-    labels_one_hot : one hot encoding of labels
+    labels_one_hot <numpy.ndarray> : one hot encoding of labels
     """
     if type(labels) is np.float32:
         nrows = 1
@@ -81,13 +82,26 @@ def make_one_hot(labels, y_min=None, y_max=None):
     num_classes = int((y_max - y_min) + 1)
     labels_one_hot = np.zeros((nrows, num_classes))
     for i in xrange(nrows):
-        class_index = labels[i] - y_min # where in the sequence of
+        class_index = int(labels[i] - y_min) # where in the sequence of
         # classes (from y_min to y_max) labels[i] is
         labels_one_hot[i, class_index] = 1
 
     return labels_one_hot
 
+# NO HDF5
 def augment(dataset, format, shift_size):
+    """
+
+    Parameters
+    ----------
+    dataset :
+    format :
+    shift_size :
+
+    Returns
+    -------
+
+    """
     shift_size *= (math.pi/180.0)
     num_shifts = int(2*math.pi / shift_size)
     x_train, y_train, x_test, y_test = ds.load_dataset(dataset, format)
@@ -106,23 +120,20 @@ def augment(dataset, format, shift_size):
 
 # HDF5
 def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
-    """ converts a series of text files into a single .npz archive
+    """ converts a series of text files into a single hdf5 archive
     create_archive takes the name of a dataset and the
     format that the data is in, loads the config file
     from the dataset's directory, loads the right text files, and saves
-    the training and testing data as numpy arrays in a single .npz
-    file. The data is normalized and its variance is set to unity
-    before saving, but the data will be randomized when it is loaded
-    because otherwise we would be using the same "random" ordering of
-    the data each time we train a network on the dataset
+    the training and testing data as numpy arrays in a single hdf5
+    file.
 
     Parameters
     ----------
-    dataset_name : name of the dataset (directory) to look for a
+    dataset_name <string> : name of the dataset (directory) to look for a
     configuration file in
 
-    format : name of the format that you want to
-    build a .npz archive for
+    format <string> : name of the format that you want to
+    build a hdf5 archive for
 
     Notes
     -----
@@ -131,7 +142,7 @@ def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
     directory.
     """
     path_dict = read_config_file(dataset_name, format)
-    output_path = os.path.join(ds.get_path_to_dataset(dataset_name), "{}.hdf5".format(dataset_name))
+    output_path = os.path.join(ds.get_path_to_dataset(dataset_name), "{}.h5".format(dataset_name))
 
     if "train_path" in path_dict:
         train_len, train_cols = get_file_len_and_shape(path_dict["train_path"])
@@ -152,12 +163,12 @@ def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
     elif "background_path" in path_dict:
         bkg_len, bkg_cols = get_file_len_and_shape(path_dict["background_path"])
         sig_len, sig_cols = get_file_len_and_shape(path_dict["signal_path"])
-        n_labels = 2
+        assert sig_cols[0] == bkg_cols[0] # the background and signal should have the same shape
+        n_labels = 1 + bkg_cols[1]
 
         total_len = bkg_len+sig_len
         bkg_read_amt = int(bkg_len*buffer/total_len)
         sig_read_amt = int(sig_len*buffer/total_len)
-        assert bkg_cols == sig_cols # Bkg and sig files should have the same data shape
         h_file, h_data = add_group_hdf5(output_path,
                                         format,
                                         zip([round(total_len*train_fraction)] * 2 + [round(total_len*(1-train_fraction))] * 2,
@@ -237,10 +248,22 @@ def create_archive(dataset_name, format, buffer=1000, train_fraction=0.8):
     h_file.close()
 
 def save_ratios(dataset, ratios, buffer=1000):
+    """
+    Divides a certain dataset into subsets of data with certain ratios of backgrond to signal. For a ratio list of
+    length n, the counting index, i, for the background starts from index 0, and the counting index, j, for the signal
+    starts at n-1. The ratio for each iteration is then i to j (i/j). Generates a temporary file to accomplish this.
 
+    Parameters
+    ----------
+    dataset <string> : the name of the dataset (/-separated)
+    ratios <list> : a list of integers that define ratios of background to signal.
+    buffer <int> : an integer defining the number of data points to load into memory at a time.
+
+    """
     ratios = [ratios] if type(ratios) is str else ratios
     ratios = map(lambda x: map(float, x.split(':')), ratios)
-    data, format = dataset.split('/')
+    data = dataset.split('/')[0]
+    format = '/'.join(dataset.split('/')[1:])
     main_file, (x_train, y_train, x_test, y_test) = ds.load_dataset(data, format, mode='a')
 
     bkg_test, sig_test = sum_cols(y_test)
@@ -249,7 +272,7 @@ def save_ratios(dataset, ratios, buffer=1000):
     TEST_UPPER_LIMIT = int(1.5 * bkg_test) if bkg_test < sig_test else int(1.5 * sig_test)
     TRAIN_UPPER_LIMIT = int(1.5 * bkg_train) if bkg_train < sig_train else int(1.5 * sig_train)
 
-    temp_h_file, temp_h_data = add_group_hdf5(".deep_learning.temp.hdf5", "Temp",
+    temp_h_file, temp_h_data = add_group_hdf5(".deep_learning.temp.h5", "Temp",
                                     [(bkg_train, x_train.shape[1]),
                                      (bkg_train, y_train.shape[1]),
                                      (sig_train, x_train.shape[1]),
@@ -312,7 +335,7 @@ def save_ratios(dataset, ratios, buffer=1000):
 
         print "Creating ratio {:d}/{:d} ...".format(*map(int, rat))
 
-        h_file, h_data = add_group_hdf5(ds.get_path_to_dataset(data)+os.sep+data+".hdf5",
+        h_file, h_data = add_group_hdf5(ds.get_path_to_dataset(data)+os.sep+data+".h5",
                                         "{}to{}".format(*map(int, rat)),
                                         [(TRAIN_UPPER_LIMIT, x_train.shape[1]),
                                          (TRAIN_UPPER_LIMIT, y_train.shape[1]),
@@ -402,7 +425,7 @@ def save_ratios(dataset, ratios, buffer=1000):
 
     main_file.close()
     temp_h_file.close()
-    os.remove(".deep_learning.temp.hdf5")
+    os.remove(".deep_learning.temp.h5")
 
 # DEPRECATED, WON'T WORK
 def _save_by_jet_num(dataset, num_jets):
@@ -434,7 +457,113 @@ def _save_by_jet_num(dataset, num_jets):
     output_path = os.path.join(ds.get_path_to_dataset(data), "{}jets_{}.npz".format(num_jets, format))
     np.savez(output_path, x_train=train_x, x_test=test_x, y_train=train_y, y_test=test_y)
 
+# NO HDF5
+def permutate_sorted(dataset):
+    """ Only use this for sorted data! Also, this takes up a significant amount of RAM """
+    data, format = dataset.split('/')
+    x_train, y_train, x_test, y_test = ds.load_dataset(data, format)
+
+    # Generate permutations, transforms, and alter the dataset
+    perms = list(gen_permutations(2, 7, 2))
+    num_perms = len(perms)
+    transforms = np.zeros((44, 44 * num_perms))
+    for i, p in enumerate(perms):
+        transforms[:, i * 44:(i + 1) * 44] = E(p)
+
+    # For the training data
+    sorted_train_x = np.zeros((x_train.shape[0] * num_perms, x_train.shape[1]))
+    sorted_train_y = np.zeros((sorted_train_x.shape[0], 2))
+
+    labels = np.concatenate((np.ones((num_perms,)).reshape((num_perms, 1)),
+                             np.zeros((num_perms,)).reshape((num_perms, 1))), axis=1)
+
+    labels[0] = [0, 1]
+
+    for i, batch in enumerate(x_train):
+        event = np.dot(batch, transforms).reshape((num_perms, x_train.shape[1]))
+        arange = np.arange(num_perms)
+        np.random.shuffle(arange)
+        sorted_train_x[i * num_perms:(i + 1) * num_perms] = event[arange]
+        sorted_train_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
+
+    # For the testing data
+    sorted_test_x = np.zeros((x_test.shape[0] * num_perms, x_test.shape[1]))
+    sorted_test_y = np.zeros((sorted_test_x.shape[0], 2))
+
+    for i, batch in enumerate(x_test):
+        event = np.dot(batch, transforms).reshape((num_perms, x_test.shape[1]))
+        arange = np.arange(num_perms)
+        np.random.shuffle(arange)
+        sorted_test_x[i * num_perms:(i + 1) * num_perms] = event[arange]
+        sorted_test_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
+
+    output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}.npz".format(format, "Permuted"))
+    np.savez(output_path, x_train=sorted_train_x, x_test=sorted_test_x, y_train=sorted_train_y, y_test=sorted_test_y)
+
+# NOT FINALIZED - NO HDF5
+def permutate_individual_sorted(dataset):
+    """ Only use this for sorted data! Also, this takes up a significant amount of RAM """
+    data, format = dataset.split('/')
+    x_train, y_train, x_test, y_test = ds.load_dataset(data, format)
+
+    # Generate permutations, transforms, and alter the dataset
+    perms = list(gen_permutations(2, 7, 2))
+    num_perms = len(perms)
+
+    aperms = np.array(perms)
+    labels = np.zeros(aperms.shape)
+    r = np.arange(11)
+    for i,p in enumerate(aperms):
+        labels[i] = (p == r).astype('int32')
+
+    transforms = np.zeros((44, 44 * num_perms))
+    for i, p in enumerate(perms):
+        transforms[:, i * 44:(i + 1) * 44] = E(p)
+
+    # For the training data
+    sorted_train_x = np.zeros((x_train.shape[0] * num_perms, x_train.shape[1]))
+    sorted_train_y = np.zeros((sorted_train_x.shape[0], 2))
+
+    for i, batch in enumerate(x_train):
+        event = np.dot(batch, transforms).reshape((num_perms, x_train.shape[1]))
+        arange = np.arange(num_perms)
+        np.random.shuffle(arange)
+        sorted_train_x[i * num_perms:(i + 1) * num_perms] = event[arange]
+        sorted_train_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
+
+    # For the testing data
+    sorted_test_x = np.zeros((x_test.shape[0] * num_perms, x_test.shape[1]))
+    sorted_test_y = np.zeros((sorted_test_x.shape[0], 2))
+
+    for i, batch in enumerate(x_test):
+        event = np.dot(batch, transforms).reshape((num_perms, x_test.shape[1]))
+        arange = np.arange(num_perms)
+        np.random.shuffle(arange)
+        sorted_test_x[i * num_perms:(i + 1) * num_perms] = event[arange]
+        sorted_test_y[i * num_perms:(i + 1) * num_perms] = labels[arange]
+
+    output_path = os.path.join(ds.get_path_to_dataset(data), "{}_{}.npz".format(format, "Permuted"))
+    np.savez(output_path, x_train=sorted_train_x, x_test=sorted_test_x, y_train=sorted_train_y, y_test=sorted_test_y)
+
 def add_group_hdf5(save_path, group, expected_shapes, where='/', names=None):
+    """
+    Adds a new group to an HDF5 archive, with the x train, y train, x test, and y test separated. The expected_shapes
+    should be a list of length 4, one shape that matches to each of these data subsets, unless you override the name
+    parameters.
+
+    Parameters
+    ----------
+    save_path <string> : The physical path to the archive file
+    group <string> : The name for the group you are adding
+    expected_shapes <list> : A list of expected shapes for the data that will be added here. It doesn't have to be exact
+    where <string> : A the root hierarchical path that you want to add the group to
+    names <list> : A list of strings for the names of the subsets of the groups
+
+    Returns
+    -------
+    hdf5_file, [data] : The HDF5 file that was opened and a list of arrays for each of the datasets that were added.
+
+    """
     names = names if names else ["x_train", "y_train", "x_test", "y_test"]
     hdf5_file = tables.open_file(save_path, mode='a')
     h_comp = tables.Filters(complevel=5, complib='blosc')
@@ -449,5 +578,53 @@ def add_group_hdf5(save_path, group, expected_shapes, where='/', names=None):
     return hdf5_file, h_data
 
 def remove_group_hdf5(save_path, group, where='/', recursive=True):
+    """
+    Removes a certain group from a dataset.
+
+    Parameters
+    ----------
+    save_path <string> : The physical path to the archive file
+    group <string> : The name for the group you are adding
+    where <string> : A the root hierarchical path that you want to add the group to
+    recursive <bool> : Whether to remove all sub-groups or not
+
+    """
     hdf5_file = tables.open_file(save_path, mode='a')
     hdf5_file.remove_node(where+group, recursive=recursive)
+    hdf5_file.flush()
+    hdf5_file.close()
+
+def add_transformed(save_path, group, buffer=1000, where='/'):
+    """
+    Takes a group and normalizes it for training. This is done quietly and only transformed groups are used for
+    training networks.
+
+    Parameters
+    ----------
+    save_path <string> : The physical path to the archive file
+    group <string> : The name for the group you are adding
+    buffer <int> : an integer defining the number of data points to load into memory at a time.
+    where <string> : A the root hierarchical path that you want to add the group to
+
+    """
+    hdf5_file = tables.open_file(save_path, mode='a')
+    parent = hdf5_file.get_node(where+group)
+    data = (parent.x_train, parent.y_train, parent.x_test, parent.y_test)
+    shapes = map(lambda x: x.shape, data)
+    h_comp = tables.Filters(complevel=5, complib='blosc')
+    h_group = hdf5_file.create_group(where+group, 'transformed', 'Data scaled to Gaussian distribution')
+    h_data = []
+    for k, shape in zip(["x_train", "y_train", "x_test", "y_test"], shapes):
+        h_data.append(hdf5_file.create_carray(h_group, k,
+                                              tables.Float32Atom(),
+                                              shape=shape,
+                                              filters=h_comp))
+    scale = tr.get_transform(data[0])
+    for i, d in enumerate(data):
+        for j in xrange(int(math.ceil(d.shape[0] / buffer))):
+            if i%2 == 1:
+                h_data[i][j*buffer:(j+1)*buffer] = d[j*buffer:(j+1)*buffer]
+            else:
+                h_data[i][j * buffer:(j + 1) * buffer] = scale.transform(d[j * buffer:(j + 1) * buffer])
+    hdf5_file.flush()
+    hdf5_file.close()
