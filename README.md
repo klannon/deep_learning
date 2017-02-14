@@ -28,7 +28,7 @@ Installing:
             <li><a href="https://developers.google.com/protocol-buffers/">Google Protocol Buffers</a>: <code>pip install protobuf==3.0.0b2</code> Data serialization library used to save the results of Keras experiments in an intelligible format</li>
             <li><a href="http://www.pytables.org/downloads.html">PyTables</a>: <code>pip install tables</code> Library we use to store and access arrays of data very efficiently, even if it exceeds your RAM</li>
         </ul>
-        Note: If you want to visualize the results of the networks you train, you can run the script "run_dashboard.py" in deep_learning/dashboard (<code>python run_dashboard.py</code>) to launch a web application that will let you visualize the results of all the networks you've trained!  More features coming soon!
+        Note: If you want to visualize the results of the networks you train, you should use <a href="https://github.com/mdkdrnevich/deep_viz">Deep Viz</a>
     </li>
     <li>Set the <code>PYTHONPATH</code> environment variable to the <em>PARENT</em> directory of the directory that you cloned this repository into (whatever directory containes the folder "deep_learning" by default) so python can resolve our imports correctly.
         <ul>
